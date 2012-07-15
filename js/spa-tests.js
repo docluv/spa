@@ -31,19 +31,16 @@ test("SPA should create a new object when called", function(){
      ok(obj === Object(obj), "should be an object");
 
      //basic sainty assertions to know members are present
-     ok(obj.version, " should be present");
-     ok(obj.swapView, " should be present");
-     ok(obj.loadNewView, "rootUrl should be present");
-     ok(obj.setViewTitle, "rootUrl should be present");
-     ok(obj.unLoadExistingView, "rootUrl should be present");
-     ok(obj.getState, "rootUrl should be present");
-     ok(obj.pushState, "rootUrl should be present");
-     ok(obj.setHash, "rootUrl should be present");
-     ok(obj.settings, "rootUrl should be present");
-     ok(obj.pageSettings, "rootUrl should be present");
+     ok(obj.version, "version should be present");
+     ok(obj.swapView, "swapView should be present");
+     ok(obj.loadNewView, "loadNewView should be present");
+     ok(obj.setViewTitle, "setViewTitle should be present");
+     ok(obj.getState, "getState should be present");
+     ok(obj.pushState, "pushState should be present");
+     ok(obj.setHash, "setHash should be present");
+     ok(obj.settings, "settings should be present");
 
 });
-
 
 test("check version #", function() {
 
