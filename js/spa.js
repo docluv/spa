@@ -40,48 +40,59 @@
 
         },
 
-        swapView: function(viewId, viewTitle) {
+        swapView: function(viewId) {
 
-            var dfd = deferred(),
-                that = this;
+            var that = this;
 
-            if(!viewId){
-                return dfd.reject(errMsg.noViewId);
-            }
+            return deferred(function(dfd){
+                
+                if(!viewId){
+                    viewId = that.getState(that.settings.viewState);
+                }
 
-            viewId = viewId.replace("#", "");
+                viewId = viewId.replace("#", "");
 
-            //if viewId is not the current view then procede to swap them out
-            if(viewId != this.getState(this.settings.viewState)) {
+                if(viewId === that.settings.currentViewState){
+                    dfd.resolve();
+                }
 
-                that.loadNewView(viewId, viewTitle)
+                var $oldView;
+                
+                if(that.settings.currentViewState != ""){
+                    $oldView = $(that.settings.viewSelector).not(".permanent");
+                }
+
+                if($oldView){
+
+                    that.closeOldView($oldView)
                         .done(function(){
 
-                            //set the #!
-                            that.pushState({ "target": viewId });
-
-                            that.closeOldView($(this.settings.viewSelector).filter(":hidden").not(".permanent"))
-                                    .done(function(){
-                                        dfd.resolve();
-                                    })
-                                    .fail(function(ret) {
-                                        dfd.reject(ret);
-                                    });
+                            that.loadNewView(viewId)
+                                .done(function(){
+                                    that.settings.currentViewState = viewId;
+                                    dfd.resolve(viewId);
+                                 });
 
                         })
                         .fail(function(ret) {
                             dfd.reject(ret);
                         });
 
-            }else{
-                dfd.resolve();
-            }
+                }else{
 
-            return dfd.promise();
+                    that.loadNewView(viewId)
+                        .done(function(){
+                            that.settings.currentViewState = viewId;
+                            dfd.resolve(viewId);
+                        });
+                    
+                }
 
+            }).promise();
+                
         },
 
-        loadNewView: function(viewId , viewTitle) {
+        loadNewView: function(viewId) {
 
             var that = this;
 
@@ -107,12 +118,6 @@
 
                     if($(viewSelector).length === 0) {
                         $wrapper.append(unescape(viewInfo.content));
-                    }
-
-                    viewInfo.viewTitle = viewTitle || viewInfo.viewTitle;
-
-                    if(viewInfo.viewTitle) {
-                        that.setViewTitle(viewInfo.viewTitle);
                     }
 
                     var templates = window.localStorage[viewId + "-templates"],
@@ -164,11 +169,12 @@
 
             return deferred(function(dfd){
 
-                if(!$current){
-                    return dfd.reject(errMsg.missingElem);
+                if(!$current || $current.length === 0){
+                    return dfd.resolve();
                 }
                 
                 $current.fadeOut(function(e) {
+                    $(this).remove();
                     dfd.resolve();
                 });
 
@@ -239,6 +245,7 @@
             viewWrapper: "#wrapper",
             currentViewSelector: ".current",
             viewState: "target",
+            currentViewState: "",
             viewTitle: ".view-title",
             viewSelector: ".content-pane",
             deferredURL: window.location.protocol + "//" + window.location.host + "/" + "deferred"

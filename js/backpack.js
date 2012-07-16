@@ -21,17 +21,15 @@
 
         version: "0.0.1",
 
-/*********/
-
         getDeferredContent: function(url) {
+
+            var that = this;
 
             return deferred(function(dfd){
 
                 if(url && url != "") { //no need to do anything if there is no page
 
-                    if(!this.checkLastDeferredRequest(url)) {
-
-                        var that = this;
+                    if(!that.checkLastDeferredRequest(url)) {
 
                         $.get(url).done(function(data) {
 
@@ -114,8 +112,6 @@
             return viewData;
 
         },
-
-/*********/
 
         //http://www.w3schools.com/js/js_cookies.asp
         setCookie: function(c_name,value,exdays)
