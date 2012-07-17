@@ -34,7 +34,7 @@
                         $.get(url).done(function(data) {
 
                             var $content = $(data),
-                                $contents = $content.children(that.settings.viewSelector);
+                                $contents = $content.find(that.settings.viewSelector);
 
                             if($contents.length === 0) {
                                 $contents = $content;
@@ -81,10 +81,19 @@
                         content: $target[0].outerHTML
                     };
 
-            this.storeViewInfo(pageInfo);
+            if(id && id != ""){
 
-            localStorage.setItem(id + "-js", $content.children("#" + id + "-js").html());
-            localStorage.setItem(id + "-css", $content.children("#" + id + "-css").html());
+                this.storeViewInfo(pageInfo);
+
+                if($content.children("#" + id + "-js").length > 0){
+                    localStorage.setItem(id + "-js", $content.children("#" + id + "-js").html());    
+                }
+
+                if($content.children("#" + id + "-css").length > 0){
+                    localStorage.setItem(id + "-css", $content.children("#" + id + "-css").html());
+                }
+                
+            }
 
         },
 
@@ -126,7 +135,9 @@
 
         },
 
-        settings: {},
+        settings: {
+            viewSelector: ".content-pane"
+        },
 
         pageSettings: {
             pageId: "",
