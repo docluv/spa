@@ -1,142 +1,188 @@
 ;
+//Backpack is a deferred content managment library with single page and mobile applications in mind
+(function (window, undefined) {
 
-//Backpack is a deferred content managment library with singple page and mobile applications in mind
-(function(window, $, undefined) {
+    "use strict";
 
-    var backpack = function(customSettings) {
+    var backpack = function (customSettings) {
 
         return new backpack.fn.init(customSettings);
     };
 
     backpack.fn = backpack.prototype = {
-        
+
         constructor: backpack,
 
-        init: function(customSettings) {
+        init: function (customSettings) {
 
             this.settings = $.extend({}, this.settings, customSettings);
 
             return this;
         },
 
-        version: "0.0.1",
+        version: "0.0.2",
 
-        getDeferredContent: function(url) {
+        getTemplates: function (remove) {
 
-            var that = this;
+            var i, temp,
+                t = document.querySelectorAll("script[type='" + this.settings.templateType + "']"),
+                templates = $.parseLocalStorage("templates");
 
-            return deferred(function(dfd){
+            for (i = 0; i < t.length; i++) {
 
-                if(url && url != "") { //no need to do anything if there is no page
+                temp = t[i];
 
-                    if(!that.checkLastDeferredRequest(url)) {
+                templates[temp.id] = temp.innerHTML.replace(/(\r\n|\n|\r)/gm, "");
 
-                        $.get(url).done(function(data) {
+                if (remove) {
 
-                            var $content = $(data),
-                                $contents = $content.find(that.settings.viewSelector);
-
-                            if($contents.length === 0) {
-                                $contents = $content;
-                            }
-
-                            $.each($contents, function(j, w) {
-
-                                that.saveContentToStorage($(w), $content);
-
-                            });
-
-                            localStorage.setItem(url, true);
-
-                        })
-                        .fail(function(e) {
-                            dfd.reject("Deferred content " + url + " failed to load. " + JSON.stringify(e));
-                        });
-
+                    if (temp.parentNode) {
+                        temp.parentNode.removeChild(temp);
                     }
-
                 }
 
-            }).promise();
-
-        },
-
-        checkLastDeferredRequest: function(key) {
-
-            return localStorage.getItem(key);
-
-        },
-
-        saveContentToStorage: function($target, $content) {
-
-            if(!$target || !$content){
-                return dfd.reject(errMsg.missingElem);
             }
 
-            var id = $target.attr("id"),
-                pageInfo =
-                    {
-                        pageId: id,
-                        viewTitle: $target.data("viewtitle"),
-                        content: $target[0].outerHTML
-                    };
+            localStorage.setItem("templates", JSON.stringify(templates));
 
-            if(id && id != ""){
+            return templates;
 
-                this.storeViewInfo(pageInfo);
+        },
 
-                if($content.children("#" + id + "-js").length > 0){
-                    localStorage.setItem(id + "-js", $content.children("#" + id + "-js").html());    
-                }
+        //keep
+        storeTemplates: function () {
 
-                if($content.children("#" + id + "-css").length > 0){
-                    localStorage.setItem(id + "-css", $content.children("#" + id + "-css").html());
-                }
-                
+            var i, //templates,
+                scripts = document.querySelectorAll("script[type='" +
+                                                      this.settings.templateType + "']");
+
+            for (i = 0; i < scripts.length; i++) {
+
+                this.saveTemplateToStorage(scripts[i]);
+
             }
 
         },
 
-        storeViewInfo: function(viewInfo) {
+        //keep
+        saveTemplateToStorage: function (s) {
+
+            if (typeof s === "string") { //assume this is the element id
+                s = document.getElementById(s);
+            }
+
+            if (s) {
+
+                localStorage.setItem(s.id, s.innerHTML.replace(/(\r\n|\n|\r)/gm, ""));
+
+                if (s.parentNode) {
+                    s.parentNode.removeChild(s);
+                }
+
+            }
+
+        },
+
+        //keep
+        getTemplate: function (id) {
+
+            return "<script type='" +
+                        this.settings.templateType
+                        + "'>" + localStorage.getItem(id) + "</script>";
+
+        },
+
+        //keep
+        updateViews: function (selector) {
+
+            var i, views = document.querySelectorAll(selector);
+
+            for (i = 0; i < views.length; i++) {
+                this.saveViewToStorage(views[i]);
+            }
+
+        },
+
+        //keep
+        hasClass: function (e, className) {
+
+            return (e.className.search(className) > -1);
+
+        },
+
+        //keep, but modify the promise stuff, take it out 4 now
+        saveViewToStorage: function (e) {
+
+            if (typeof e === "string") { //assume this is the element id
+                e = document.getElementById(e);
+            }
+
+            if (e) {
+
+                this.storeViewInfo(this.parseViewInfo(e));
+
+                if (e.parentNode && !this.hasClass(e, "current")) {
+                    e.parentNode.removeChild(e);
+                }
+
+            }
+
+        },
+
+        //keep, but update
+        parseViewInfo: function (ve) {
+
+            return {
+                pageId: ve.id,
+                viewTitle: (ve.hasAttribute("data-title") ?
+                                ve.getAttribute("data-title") :
+                                this.settings.defaultTitle),
+                tranistion: (ve.hasAttribute("data-transition") ?
+                                ve.getAttribute("data-transition") :
+                                ""), //need a nice way to define the default animation
+                content: ve.outerHTML
+            };
+
+        },
+
+        //keep
+        storeViewInfo: function (viewInfo) {
 
             viewInfo = $.extend({}, this.pageSettings, viewInfo);
 
             localStorage.setItem(viewInfo.pageId,
                             JSON.stringify(viewInfo));
+
         },
 
-        getViewData: function(viewId){
-            
-            var viewData = window.localStorage[viewId];
+        //keep
+        getViewData: function (viewId) {
 
-            if(!viewData) {
+            var viewData = localStorage[viewId],
+                view;
 
-                if($("#" + viewId).length > 0) {
+            if (!viewData) {
 
-                    this.saveContentToStorage($("#" + viewId), $("body"));
+                view = document.getElementById(viewId);
+
+                if (view) {
+
+                    this.saveViewToStorage(view);
                     viewData = window.localStorage[viewId];
                 }
             }
 
-            return viewData;
-
-        },
-
-        //http://www.w3schools.com/js/js_cookies.asp
-        setCookie: function(c_name,value,exdays)
-        {
-            exdays = exdays || 1;
-
-            var exdate=new Date();
-            exdate.setDate(exdate.getDate() + exdays);
-
-            var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-            document.cookie=c_name + "=" + c_value;
+            if (viewData) {
+                return JSON.parse(viewData);
+            }
 
         },
 
         settings: {
-            viewSelector: ".content-pane"
+            viewSelector: ".content-pane",
+            defaultTitle: "A Really Cool SPA App",
+            deferredTimeKey: "lastDeferredTime",
+            templateType: "text/x-mustache-template"
         },
 
         pageSettings: {
@@ -157,6 +203,6 @@
 
     return (window.backpack = backpack);
 
-})(window, jQuery);
+})(window);
 
 
