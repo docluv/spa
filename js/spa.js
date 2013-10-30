@@ -1,53 +1,59 @@
+/// <reference path="backack.js" />
+/// <reference path="helper.extensions.js" />
 ;
 
-(function (window, $, bp, undefined) {
+(function (window, $, undefined) {
 
     "use strict";
 
+    var _gaq = _gaq || undefined;
+
     // Define a local copy of deferred
     var spa = function (customSettings) {
+        
+        var that = new spa.fn.init();
 
-        return new spa.fn.init(customSettings);
+        that.settings = $.extend({}, that.settings, customSettings);
+
+        that.bp = that.settings.bp || backpack();
+
+        that.titleElement = document.querySelector(that.settings.titleSelector);
+
+        if (that.settings.parseDOM) {
+
+            that.setupRoutes(that.settings.viewSelector);
+
+        }
+
+        window.addEventListener("hashchange", function (e) {
+
+            that.swapView();
+
+        });
+
+        if (that.getParameterByName(that.settings.forceReload)) {
+
+            window.location.replace(window.location.href.split("?")[0] + "#!" +
+                    that.getParameterByName(that.settings.forceReload));
+            return that;
+
+        }else if (that.settings.initView) {
+            that.swapView();
+        }
+
+        return that;
+
     };
 
     spa.fn = spa.prototype = {
 
         constructor: spa,
 
-        init: function (customSettings) {
-
-            var that = this;
-
-            that.bp = bp || backpack();
-
-            that.settings = $.extend({}, that.settings, customSettings);
-
-            that.titleElement = document.querySelector(that.settings.titleSelector);
-
-            if (that.settings.parseDOM) {
-
-                that.setupRoutes(that.settings.viewSelector);
-
-                //if (that.bp) {
-                //    that.bp.updateViews();
-                //}
-
-            }
-
-            window.addEventListener("hashchange", function (e) {
-
-                that.swapView();
-
-            });
-
-            if (that.settings.initView) {
-                that.swapView();
-            }
-
+        init: function () {
             return this;
         },
 
-        version: "0.0.3",
+        version: "0.0.4",
 
         bp: undefined,
 
@@ -58,27 +64,16 @@
                 i = 0, j = 0, rawPath, view, route, viewId,
                 Views = document.querySelectorAll(that.settings.viewSelector);
 
-            for (i = 0; i < Views.length; i++) {
+            for (; i < Views.length; i++) {
 
                 view = Views[i];
 
                 if (view.hasAttributes() && view.hasAttribute("id")) {
 
                     viewId = view.getAttribute("id");
-                    rawPath = $.data(view, "path");
+                    rawPath = (view.hasAttribute("data-path") ? view.getAttribute("data-path") : "");
 
-                    //need to check for duplicate path
-                    route = {
-                        viewId: viewId,
-                        path: rawPath.split("\\:")[0],
-                        params: rawPath.split("\\:").slice(1),
-                        title: $.data(view, "title", that.settings.defaultTitle),
-                        transition: $.data(view, "transition"),
-                        paramValues: {},
-                        callback: $.data(view, "callback", "load" + viewId),
-                        unload: $.data(view, "unload", "unload" + viewId)
-                    };
-
+                    route = that.createRoute(viewId, rawPath, view);
                     routes[route.path] = route;
 
                 }
@@ -89,9 +84,28 @@
 
             localStorage.setItem("routes", JSON.stringify(routes));
 
-            if (this.bp && (that.getParameterByName("_escaped_fragment_") === "")) {
-                this.bp.updateViews(that.settings.viewSelector);
+            if (that.bp && (that.getParameterByName("_escaped_fragment_") === "")) {
+                that.bp.updateViews(that.settings.viewSelector);
             }
+
+        },
+
+        createRoute: function (viewId, rawPath, view) {
+
+            //need to check for duplicate path
+            return {
+                viewId: viewId,
+                path: rawPath.split("\\:")[0],
+                params: rawPath.split("\\:").slice(1),
+                title: (view.hasAttribute("data-title") ? view.getAttribute("data-title") :
+                        that.settings.defaultTitle),
+                transition: (view.hasAttribute("data-transition") ?
+                        view.getAttribute("data-transition") :
+                        ""),
+                paramValues: {},
+                callback: (view.hasAttribute("data-callback") ? view.getAttribute("data-callback") : "load" + viewId),
+                unload: (view.hasAttribute("data-unload") ? view.getAttribute("data-unload") : "unload" + viewId)
+            };
 
         },
 
@@ -105,10 +119,9 @@
                     paramValues = {},
                     search;
 
+            //routes is an object so we can match the path to the route as it will be a property name.
             if (routes.hasOwnProperty(path)) {
-
                 return routes[path];
-
             }
 
             for (key in routes) {
@@ -216,13 +229,29 @@
                 }
             }
 
-            return '';
+            return "";
+        },
+
+        removeExtraViews: function (currentView) {
+
+            while (currentView.length > 1) {
+                currentView[currentView.length - 1]
+                        .parentNode.removeChild(currentView[currentView.length - 1]);
+            }
+        },
+
+        pushGA: function (path) {
+
+            //if Google Analytics available, then push the path
+            if (_gaq !== undefined) {
+                _gaq.push(['_trackPageview', path]);
+            }
         },
 
         swapView: function () {
 
             var that = this,
-                route, callback, title, i, a, anim, wrapper,
+                route, callback, title, i, a, anim,
                 hash = window.location.hash, newView,
                 hasEscapeFragment = that.getParameterByName("_escaped_fragment_"),
                 hashFragment = (hash !== "#") ? hash.replace("#!", "") : "",
@@ -232,16 +261,7 @@
 
             if (currentView.length) {
                 //adding this because I found myself sometimes tapping items to launch a new view before the animation was complete.
-                while (currentView.length > 1) {
-
-                    wrapper = currentView[currentView.length - 1].parentNode;
-
-                    if(wrapper){
-                        wrapper.removeChild(currentView[currentView.length - 1]);
-                    }
-                    
-                }
-
+                that.removeExtraViews(currentView);
             }
 
             //convert nodelist to a single node
@@ -253,10 +273,7 @@
 
             if (route !== undefined) {
 
-                //if Google Analytics available, then push the path
-                if (_gaq !== undefined) {
-                    _gaq.push(['_trackPageview', path]);
-                }
+                that.pushGA(path);
 
                 that.ensureViewAvailable(currentView, route.viewId);
 
@@ -272,6 +289,7 @@
                                 that.endSwapAnimation.call(that, e, currentView, newView);
                             });
 
+                            //modify once addClass supports array of classes
                             $.addClass(currentView, "animated");
                             $.addClass(currentView, "out");
                             $.addClass(currentView, anim);
@@ -292,7 +310,7 @@
                     that.setDocumentTitle(route);
 
                     if (route.callback) {
-                        that.callbackFromRoute(route);
+                        that.makeCallback(route);
                     }
 
                 }
@@ -302,7 +320,8 @@
                 window.location.hash = "#!" + this.settings.NotFoundRoute;
 
             } else {//should only get here is this is an escapefragemented url for the spiders
-                newView = $.addClass(this.settings.viewSelector, that.settings.currentClass);
+                newView = $.addClass(this.settings.viewSelector,
+                                    that.settings.currentClass);
             }
 
         },
@@ -322,18 +341,24 @@
             var that = this,
                 anim = that.animation;
 
-            $.removeClass(currentView, that.settings.currentClass);
-            $.removeClass(currentView, anim);
-            $.removeClass(currentView, "out");
+            if (currentView.classList) {
 
-            $.removeClass(newView, "in");
-            $.removeClass(newView, anim);
+                currentView.classList.remove(that.settings.currentClass);
+                currentView.classList.remove(anim);
+                currentView.classList.remove("out");
 
-            if (currentView &&
-                $.data(currentView, "unload") != "" &&
-                $.data(currentView, "unload")) {
+                newView.classList.remove(anim);
+                newView.classList.remove("in");
 
-                that.makeCallback($.data(currentView, "unload"));
+            } else {
+
+                currentView.className.replace(that.settings.currentClass, " ");
+                currentView.className.replace(anim, " ");
+                currentView.className.replace("out", " ");
+
+                newView.className.replace(anim, " ");
+                newView.className.replace("in", " ");
+
             }
 
             if (currentView && bp && currentView.parentNode) {
@@ -344,14 +369,21 @@
 
         },
 
-
         //make sure the view is actually available, this relies on backpack to supply the markup and inject it into the DOM
         ensureViewAvailable: function (currentView, newViewId) {
             //must have backpack or something similar that implements its interface
             if (this.bp) {
 
                 var view = this.bp.getViewData(newViewId),
-                    newView = this.createFragment(view.content);
+                    newView, loc;
+
+                if (view) {
+                    newView = this.createFragment(view.content)
+                } else {
+                    loc = window.location.href.split("#!");
+                    window.location.replace(loc[0] + "?" +
+                        this.settings.forceReload + "=" + loc[1]);
+                }
 
                 if (currentView) {
                     currentView.parentNode
@@ -366,9 +398,11 @@
 
         },
 
-        makeCallback: function (callback, paramValues) {
+        makeCallback: function (route) {
 
             var a, that,
+                callback = route.callback,
+            //    unload = route.unload,
                 cbPaths = callback.split(".");
 
             if (!callback) {
@@ -386,21 +420,11 @@
                 callback = callback[cbPaths[a]];
             }
 
-            paramValues = paramValues || {};
+            route.paramValues = route.paramValues || {};
 
             if (callback) {
-                callback.call(that, paramValues);
+                callback.call(that, route.paramValues);
             }
-
-        },
-
-        callbackFromRoute: function (route) {
-            
-            if (!route.callback) {
-                return;
-            }
-
-            this.makeCallback(route.callback, route.paramValues || {});
 
         },
 
@@ -420,24 +444,6 @@
             }
 
             document.title = title;
-
-            that.setMainTitle(title);
-
-        },
-
-        titleElement: undefined,
-
-        setMainTitle: function (title) {
-
-            if (this.titleElement && this.settings.autoSetTitle) {
-
-                if (this.titleElement.textContent) {
-                    this.titleElement.textContent = title;
-                } else {
-                    this.titleElement.innerText = title;
-                }
-
-            }
 
         },
 
@@ -482,6 +488,22 @@
 
         },
 
+        storeAsyncContent: function (content) {
+
+            this.bp.updateViewsFromFragment(this.settings.viewSelector, content);
+        },
+
+        loadAsyncContent: function (url, callback) {
+
+            callback = callback || this.storeAsyncContent;
+
+            var oReq = new XMLHttpRequest();
+
+            oReq.onload = callback;
+            oReq.open("get", url, true);
+            oReq.send();
+        },
+
         //array of animations. The names match the CSS class so make sure you have the CSS for this animation or you will be dissapointed.
         animations: {
             "slide": "slide",
@@ -498,6 +520,7 @@
             NotFoundRoute: "404",
             defaultTitle: "A Single Page Site with Routes",
             titleSelector: ".view-title",
+            forceReload: "_force_reload_",
             autoSetTitle: true,
             parseDOM: true,
             initView: true,
@@ -511,5 +534,4 @@
 
     return (window.spa = spa);
 
-})(window, $, backpack());
-
+})(window, $);

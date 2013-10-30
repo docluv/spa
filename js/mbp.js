@@ -38,9 +38,10 @@ var _gaq = _gaq || undefined,
     };
 
     $.hideUrlBarOnLoad = function () {
-        var win = window;
-        var doc = win.document;
-        var bodycheck;
+
+        var win = window,
+            doc = win.document,
+            bodycheck;
 
         // If there's a hash, or addEventListener is undefined, stop here
         if (!location.hash && win.addEventListener) {
@@ -241,31 +242,87 @@ var _gaq = _gaq || undefined,
 
     };
 
-    $.removeClass = function(view, cssClass){
+    $.removeClass = function (view, cssClass) {
 
-        view.className = view.className
-                            .replace(" " + cssClass + " ", " ")
-                            .replace(" " + cssClass, "")
-                            .replace(cssClass + " ", "");
+        if ((!view || !cssClass) && typeof cssClass != "string") {
+            return;
+        }
+
+        //only reset the className if the target class exist, keeps brosers from auto repainting the document.
+        if (view.className.indexOf(cssClass) > -1) {
+
+            view.className = view.className
+                                .replace(" " + cssClass + " ", " ")
+                                .replace(" " + cssClass, "")
+                                .replace(cssClass + " ", "");
+
+        }
 
     };
 
     $.addClass = function (view, cssClass) {
 
-        if (!view || !cssClass) {
+        if ((!view || !cssClass) && typeof cssClass != "string") {
             return;
         }
 
-        if (view.classList) {
+        view.className += " " + cssClass;
 
-            view.classList.add(cssClass);
+    };
 
-        } else {
+    $.hasClass = function (ele, cssClass) {
 
-            view.className += " " + cssClass;
+        cssClass = " " + cssClass + " ";
 
+        if (!ele.length) {
+            ele = [ele];
         }
 
+        var rclass = /[\t\r\n]/g,
+            i = 0,
+            l = ele.length;
+
+        for (; i < l; i++) {
+            if (ele[i].nodeType === 1 &&
+                (" " + ele[i].className + " ")
+                    .replace(rclass, " ").indexOf(cssClass) >= 0) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    $.toggleClass = function (ele, cssClass) {
+
+        if (this.hasClass(ele, cssClass)) {
+            this.removeClass(ele, cssClass);
+        } else {
+            this.addClass(ele, cssClass);
+        }
+
+    };
+
+    $.toggle = function (ele, style) {
+
+        style = style || "block";
+
+        if (ele.style.display === "" || ele.style.display === "none" ) {
+            ele.style.display = style;
+        } else {
+            ele.style.display = "none";
+        }
+
+    };
+
+    $.show = function (ele, style) {
+        style = style || "block";
+
+        ele.style.display = style;
+    };
+    
+    $.hide = function (ele) {
+        ele.style.display = "none";
     };
 
     $.attr = function (view, attr, value) {
@@ -287,5 +344,6 @@ var _gaq = _gaq || undefined,
 
     };
 
+    $.noop = function () { };
 
 })(document, $);

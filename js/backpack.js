@@ -1,22 +1,27 @@
 ;
 //Backpack is a deferred content managment library with single page and mobile applications in mind
-(function (window, undefined) {
+(function (window, $, undefined) {
 
     "use strict";
 
     var backpack = function (customSettings) {
 
-        return new backpack.fn.init(customSettings);
+        if (!window.localStorage) {
+            console.error("this browser does not support localStorage, therefore markup cannot be stored using backpack.");
+        }
+
+        var that = new backpack.fn.init();
+
+        that.settings = $.extend({}, that.settings, customSettings);
+
+        return that;
     };
 
     backpack.fn = backpack.prototype = {
 
         constructor: backpack,
 
-        init: function (customSettings) {
-
-            this.settings = $.extend({}, this.settings, customSettings);
-
+        init: function () {
             return this;
         },
 
@@ -32,6 +37,7 @@
 
                 temp = t[i];
 
+                //uses an associative array (object) to store, so the id is usnique.
                 templates[temp.id] = temp.innerHTML.replace(/(\r\n|\n|\r)/gm, "");
 
                 if (remove) {
@@ -43,6 +49,7 @@
 
             }
 
+            //can store all of them because they get compiled and therefor are just sitting in memory during runtime
             localStorage.setItem("templates", JSON.stringify(templates));
 
             return templates;
@@ -50,52 +57,11 @@
         },
 
         //keep
-        storeTemplates: function () {
+        updateViews: function (selector, ele) {
 
-            var i, //templates,
-                scripts = document.querySelectorAll("script[type='" +
-                                                      this.settings.templateType + "']");
+            ele = ele || document;
 
-            for (i = 0; i < scripts.length; i++) {
-
-                this.saveTemplateToStorage(scripts[i]);
-
-            }
-
-        },
-
-        //keep
-        saveTemplateToStorage: function (s) {
-
-            if (typeof s === "string") { //assume this is the element id
-                s = document.getElementById(s);
-            }
-
-            if (s) {
-
-                localStorage.setItem(s.id, s.innerHTML.replace(/(\r\n|\n|\r)/gm, ""));
-
-                if (s.parentNode) {
-                    s.parentNode.removeChild(s);
-                }
-
-            }
-
-        },
-
-        //keep
-        getTemplate: function (id) {
-
-            return "<script type='" +
-                        this.settings.templateType
-                        + "'>" + localStorage.getItem(id) + "</script>";
-
-        },
-
-        //keep
-        updateViews: function (selector) {
-
-            var i, views = document.querySelectorAll(selector);
+            var i, views = ele.querySelectorAll(selector);
 
             for (i = 0; i < views.length; i++) {
                 this.saveViewToStorage(views[i]);
@@ -103,11 +69,12 @@
 
         },
 
-        //keep
-        hasClass: function (e, className) {
+        updateViewsFromFragment: function (selector, fragment) {
 
-            return (e.className.search(className) > -1);
+            var div = document.createElement('div');
+            div.innerHTML = fragment;
 
+            this.updateViews(selector, div);
         },
 
         //keep, but modify the promise stuff, take it out 4 now
@@ -121,7 +88,7 @@
 
                 this.storeViewInfo(this.parseViewInfo(e));
 
-                if (e.parentNode && !this.hasClass(e, "current")) {
+                if (e.parentNode && !(e.className.search("current") > -1)) {
                     e.parentNode.removeChild(e);
                 }
 
@@ -130,17 +97,17 @@
         },
 
         //keep, but update
-        parseViewInfo: function (ve) {
+        parseViewInfo: function (view) {
 
             return {
-                pageId: ve.id,
-                viewTitle: (ve.hasAttribute("data-title") ?
-                                ve.getAttribute("data-title") :
+                pageId: view.id,
+                viewTitle: (view.hasAttribute("data-title") ?
+                                view.getAttribute("data-title") :
                                 this.settings.defaultTitle),
-                tranistion: (ve.hasAttribute("data-transition") ?
-                                ve.getAttribute("data-transition") :
+                tranistion: (view.hasAttribute("data-transition") ?
+                                view.getAttribute("data-transition") :
                                 ""), //need a nice way to define the default animation
-                content: ve.outerHTML
+                content: view.outerHTML
             };
 
         },
@@ -182,7 +149,7 @@
             viewSelector: ".content-pane",
             defaultTitle: "A Really Cool SPA App",
             deferredTimeKey: "lastDeferredTime",
-            templateType: "text/x-mustache-template"
+            templateType: "text/x-handlebars-template"
         },
 
         pageSettings: {
@@ -203,6 +170,6 @@
 
     return (window.backpack = backpack);
 
-})(window);
+})(window, $);
 
 
