@@ -2,7 +2,7 @@
 /// <reference path="helper.extensions.js" />
 ;
 
-(function (window, $, undefined) {
+(function (window, undefined) {
 
     "use strict";
 
@@ -10,10 +10,10 @@
 
     // Define a local copy of deferred
     var spa = function (customSettings) {
-        
+
         var that = new spa.fn.init();
 
-        that.settings = $.extend({}, that.settings, customSettings);
+        that.settings = $().extend({}, that.settings, customSettings);
 
         that.bp = that.settings.bp || backpack();
 
@@ -25,7 +25,7 @@
 
         }
 
-        window.addEventListener("hashchange", function (e) {
+        window.addEventListener("hashchange", function () {
 
             that.swapView();
 
@@ -37,8 +37,18 @@
                     that.getParameterByName(that.settings.forceReload));
             return that;
 
-        }else if (that.settings.initView) {
+        } else if (that.settings.initView) {
             that.swapView();
+        }
+
+        if (that.settings.asyncUrl && typeof that.settings.asyncUrl === "string") {
+
+            document.addEventListener("DOMContentLoaded", function () {
+
+                e.target.removeEventListener(e.type, arguments.callee);
+
+                that.loadAsyncContent.call(that, that.settings.asyncUrl);
+            });
         }
 
         return that;
@@ -60,8 +70,9 @@
         setupRoutes: function () {
 
             var that = this,
-                routes = $.extend($.parseLocalStorage("routes") || {}, that.settings.routes),
-                i = 0, j = 0, rawPath, view, route, viewId,
+                $$ = $(),
+                routes = $$.extend($$.parseLocalStorage("routes") || {}, that.settings.routes),
+                i = 0, rawPath, view, route, viewId,
                 Views = document.querySelectorAll(that.settings.viewSelector);
 
             for (; i < Views.length; i++) {
@@ -71,7 +82,7 @@
                 if (view.hasAttributes() && view.hasAttribute("id")) {
 
                     viewId = view.getAttribute("id");
-                    rawPath = (view.hasAttribute("data-path") ? view.getAttribute("data-path") : "");
+                    rawPath = (view.hasAttribute("data-route") ? view.getAttribute("data-route") : "");
 
                     route = that.createRoute(viewId, rawPath, view);
                     routes[route.path] = route;
@@ -98,18 +109,18 @@
                 path: rawPath.split("\\:")[0],
                 params: rawPath.split("\\:").slice(1),
                 title: (view.hasAttribute("data-title") ? view.getAttribute("data-title") :
-                        that.settings.defaultTitle),
+                        this.settings.defaultTitle),
                 transition: (view.hasAttribute("data-transition") ?
                         view.getAttribute("data-transition") :
                         ""),
                 paramValues: {},
-                callback: (view.hasAttribute("data-callback") ? view.getAttribute("data-callback") : "load" + viewId),
-                unload: (view.hasAttribute("data-unload") ? view.getAttribute("data-unload") : "unload" + viewId)
+                onload: (view.hasAttribute("data-onload") ? view.getAttribute("data-onload") : undefined), //"load" + viewId),
+                unload: (view.hasAttribute("data-unload") ? view.getAttribute("data-unload") : undefined)//"unload" + viewId)
             };
 
         },
 
-        matchRoute: function (path, routes) {
+        matchRouteByPath: function (path, routes) {
 
             if (!routes) {
                 routes = this.settings.routes;
@@ -155,6 +166,30 @@
             return route;
         },
 
+        matchRouteById: function (id, routes) {
+
+            if (!routes) {
+                routes = this.settings.routes;
+            }
+
+            var route;
+
+            for (route in routes) {
+                if (routes[route].viewId === id) {
+                    return routes[route];
+                }
+            }
+
+            //for (var i = 0; i < routes.length; i++) {
+
+            //    if (routes[i].viewId === id) {
+            //        return route[i];
+            //    }
+
+            //}
+
+        },
+
         //  newView: undefined, //placeholder for new view
         //  currentView: undefined, //placeholder for current view before a swap
         animation: undefined,
@@ -190,13 +225,13 @@
             }
         },
 
-        transitionend : {
+        transitionend: {
             'animation': 'animationend',
             'webkitAnimation': 'webkitAnimationEnd',
             'MozAnimation': 'animationend',
             'OAnimation': 'oAnimationEnd'
         },
-        
+
         // repurposed helper
         cssPrefix: function (suffix) {
 
@@ -207,25 +242,25 @@
 
             if (suffix.indexOf('-') >= 0) {
 
-                parts = (''+suffix).split('-');
+                parts = ('' + suffix).split('-');
 
-                for (i=1, len=parts.length; i<len; i++) {
-                    parts[i] = parts[i].substr(0, 1).toUpperCase()+parts[i].substr(1);
+                for (i = 1, len = parts.length; i < len; i++) {
+                    parts[i] = parts[i].substr(0, 1).toUpperCase() + parts[i].substr(1);
                 }
-                suffix =  parts.join('');
+                suffix = parts.join('');
             }
 
             if (suffix in bodyStyle) {
                 return suffix;
             }
 
-            suffix = suffix.substr(0, 1).toUpperCase()+suffix.substr(1);
+            suffix = suffix.substr(0, 1).toUpperCase() + suffix.substr(1);
 
             prefixes = ['webkit', 'Moz', 'ms', 'O'];
 
-            for (i=0, len=prefixes.length; i<len; i++) {
-                if (prefixes[i]+suffix in bodyStyle) {
-                    return prefixes[i]+suffix;
+            for (i = 0, len = prefixes.length; i < len; i++) {
+                if (prefixes[i] + suffix in bodyStyle) {
+                    return prefixes[i] + suffix;
                 }
             }
 
@@ -251,11 +286,10 @@
         swapView: function () {
 
             var that = this,
-                route, callback, title, i, a, anim,
+                route, oldRoute, anim,
                 hash = window.location.hash, newView,
                 hasEscapeFragment = that.getParameterByName("_escaped_fragment_"),
                 hashFragment = (hash !== "#") ? hash.replace("#!", "") : "",
-                params = hashFragment.split(":").slice(1),
                 path = hashFragment.split(":")[0],
                 currentView = document.querySelectorAll("." + this.settings.currentClass);
 
@@ -267,7 +301,11 @@
             //convert nodelist to a single node
             currentView = currentView[0];
 
-            route = that.matchRoute(path);
+            if (currentView && currentView.id) {
+                oldRoute = that.matchRouteById(currentView.id);
+            }
+
+            route = that.matchRouteByPath(path);
             anim = that.getAnimation(route);
             that.animation = anim;
 
@@ -285,32 +323,28 @@
 
                         if (that.hasAnimations() && anim) {
 
-                            currentView.addEventListener(that.transitionend[that.cssPrefix("animation")], function (e) {
-                                that.endSwapAnimation.call(that, e, currentView, newView);
-                            });
+                            currentView.addEventListener(
+                                that.transitionend[that.cssPrefix("animation")], function (e) {
+                                    that.endSwapAnimation.call(that, currentView, newView, oldRoute);
+                                });
 
                             //modify once addClass supports array of classes
-                            $.addClass(currentView, "animated");
-                            $.addClass(currentView, "out");
-                            $.addClass(currentView, anim);
-
-                            $.removeClass(currentView, "in");
+                            $(currentView).addClass("animated out " + anim)
+                                .removeClass("in");
 
                         } else {
-                            that.endSwapAnimation.call(that, undefined, currentView, newView);
+                            that.endSwapAnimation.call(that, undefined, currentView, newView, oldRoute);
                         }
 
                     }
 
-                    $.addClass(newView, that.settings.currentClass);
-                    $.addClass(newView, "animated");
-                    $.addClass(newView, anim);
-                    $.addClass(newView, "in");
+                    $(newView).addClass(that.settings.currentClass +
+                                        " animated " + anim + " in");
 
                     that.setDocumentTitle(route);
 
-                    if (route.callback) {
-                        that.makeCallback(route);
+                    if (route) {
+                        that.makeCallback(route, "onload");
                     }
 
                 }
@@ -320,8 +354,7 @@
                 window.location.hash = "#!" + this.settings.NotFoundRoute;
 
             } else {//should only get here is this is an escapefragemented url for the spiders
-                newView = $.addClass(this.settings.viewSelector,
-                                    that.settings.currentClass);
+                newView = $(this.settings.viewSelector).addClass(that.settings.currentClass);
             }
 
         },
@@ -336,35 +369,24 @@
 
         },
 
-        endSwapAnimation: function (e, currentView, newView) {
+        endSwapAnimation: function (currentView, newView, route) {
 
             var that = this,
                 anim = that.animation;
 
-            if (currentView.classList) {
+            $(currentView).removeClass(that.settings.currentClass + " " +
+                                        anim + " out ");
 
-                currentView.classList.remove(that.settings.currentClass);
-                currentView.classList.remove(anim);
-                currentView.classList.remove("out");
-
-                newView.classList.remove(anim);
-                newView.classList.remove("in");
-
-            } else {
-
-                currentView.className.replace(that.settings.currentClass, " ");
-                currentView.className.replace(anim, " ");
-                currentView.className.replace("out", " ");
-
-                newView.className.replace(anim, " ");
-                newView.className.replace("in", " ");
-
-            }
+            $(newView).removeClass(anim + " in");
 
             if (currentView && bp && currentView.parentNode) {
 
                 currentView.parentNode.removeChild(currentView);
 
+            }
+
+            if (route) {
+                that.makeCallback(route, "unload");
             }
 
         },
@@ -378,7 +400,7 @@
                     newView, loc;
 
                 if (view) {
-                    newView = this.createFragment(view.content)
+                    newView = this.createFragment(view.content);
                 } else {
                     loc = window.location.href.split("#!");
                     window.location.replace(loc[0] + "?" +
@@ -398,16 +420,28 @@
 
         },
 
-        makeCallback: function (route) {
+        makeCallback: function (route, action) {
 
-            var a, that,
-                callback = route.callback,
-            //    unload = route.unload,
-                cbPaths = callback.split(".");
+            var that = this,
+                a, cbPaths, callback;
 
-            if (!callback) {
+            if (action && !route[action]) {
+
+                var ctx = that.settings.appContext;
+
+                if (that.settings.appContext) {
+
+                    if (ctx[route.viewId] && ctx[route.viewId][action]) {
+                        ctx[route.viewId][action].call(ctx, route.paramValues || {});
+                    }
+
+                }
+
+
                 return;
             }
+
+            cbPaths = route[action].split(".");
 
             callback = window[cbPaths[0]];
 
@@ -420,18 +454,15 @@
                 callback = callback[cbPaths[a]];
             }
 
-            route.paramValues = route.paramValues || {};
-
             if (callback) {
-                callback.call(that, route.paramValues);
+                callback.call(that, route.paramValues || {});
             }
 
         },
 
         setDocumentTitle: function (route) {
 
-            var that = this,
-                title = route.title, i;
+            var title = route.title, i;
 
             if (title === "") {
                 return;
@@ -515,7 +546,7 @@
             routes: [],
             viewSelector: ".content-pane",
             currentClass: "current",
-            mainWrappperSelector: "#main",
+            mainWrappperSelector: "main",
             NotFoundView: "NotFound",
             NotFoundRoute: "404",
             defaultTitle: "A Single Page Site with Routes",
@@ -524,7 +555,8 @@
             autoSetTitle: true,
             parseDOM: true,
             initView: true,
-            viewTransition: "slide"
+            viewTransition: "slide",
+            asyncUrl: undefined
         }
 
     };
@@ -534,4 +566,4 @@
 
     return (window.spa = spa);
 
-})(window, $);
+})(window);
