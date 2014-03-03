@@ -1,0 +1,5 @@
+{
+  "name": "spajs",
+  "version": "0.5.0",
+  "main": "js/spa.min.js"
+}

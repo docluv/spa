@@ -377,7 +377,7 @@
                             $(newView).addClass(settings.currentClass +
                                 " animated " + anim + " in");
 
-                        }else{
+                        } else {
 
                             $(newView).addClass(settings.currentClass);
                             that.endSwapAnimation.call(that, oldRoute, route);
