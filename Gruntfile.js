@@ -12,11 +12,11 @@ module.exports = function (grunt) {
             options: {
                 browser: true
             },
-            files: ['Gruntfile.js', 'js/spa.js']
+            files: ['Gruntfile.js', 'js/dev/*.js']
         },
         watch: {
           scripts: {
-            files: ['js/spa.js'],
+            files: ['js/dev/*.js'],
             tasks: ['uglify'],
             options: {
               spawn: false,
@@ -28,7 +28,7 @@ module.exports = function (grunt) {
                 compress: true
             },
             spa: {
-                src: ['js/spa.js'],
+                src: ['js/dev/spa.js'],
                 dest: 'js/spa.min.js'
             }
         }
