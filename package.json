@@ -3,6 +3,12 @@
   "version": "0.5.0",
     "author" : "Chris Love",
     "private" : true,
+  "homepage": "https://github.com/docluv/spajs",
+  "license": {
+    "type": "Apache",
+    "url": "https://github.com/docluv/spajs/LICENSE"
+  },
+
   "devDependencies": {
 		"grunt" :                       "~0.4.*",
 		"grunt-contrib-cssmin":         "*",
