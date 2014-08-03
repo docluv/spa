@@ -1,8 +1,8 @@
-module.exports = function (grunt)     
+module.exports = function(grunt) {
     // Force use of Unix newlines
     grunt.util.linefeed = '\n';
 
-    RegExp.quote = function (string) {
+    RegExp.quote = function(string) {
         return string.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&');
     };
 
@@ -29,13 +29,13 @@ module.exports = function (grunt)
             files: ['Gruntfile.js', 'js/dev/*.js']
         },
         watch: {
-          scripts: {
-            files: ['js/dev/*.js'],
-            tasks: ['uglify'],
-            options: {
-              spawn: false,
+            scripts: {
+                files: ['js/dev/*.js'],
+                tasks: ['uglify'],
+                options: {
+                    spawn: false,
+                }
             }
-          }
         },
         uglify: {
             options: {
@@ -43,13 +43,27 @@ module.exports = function (grunt)
                 banner: '<%= banner %>'
             },
             spa: {
-                src: ['js/dev/spa.js'],
+                src: [
+                    'js/dev/views/class.js',
+                    'js/dev/views/controller.js',
+                    //                  'js/dev/views/formView.js',
+                    //                'js/dev/views/listView.js',
+                    //         'js/dev/app/spaApp.js',
+                    'js/dev/spa.js'
+                ],
                 dest: 'js/spa.min.js'
+            },
+            backpack: {
+                src: [
+                    'js/libs/backpack.js'
+                ],
+                dest: 'js/backpack.min.js'
             }
+
         }
     });
 
     // Default task.
-    grunt.registerTask('default', [/*'jshint', 'qunit', */'uglify' /*, 'cssmin'*/]);
+    grunt.registerTask('default', [ /*'jshint', 'qunit', */ 'uglify']);
 
 };
