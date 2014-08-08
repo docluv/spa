@@ -1,13 +1,13 @@
-﻿(function () {
+(function() {
 
-    var formView = View.extend({
+    var formView = Controller.extend({
 
-        init: function (rootScope) {
+        init: function(rootScope) {
             this._super(rootScope);
         },
 
 
-        loadModel: function (id) {
+        loadModel: function(id) {
 
             console.log("loading model");
 
@@ -15,7 +15,7 @@
 
         },
 
-        saveModel: function (model) {
+        saveModel: function(model) {
 
             console.log("saving model");
 

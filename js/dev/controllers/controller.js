@@ -1,12 +1,12 @@
-﻿;
+;
 
-(function () {
+(function() {
 
     "use strict";
 
-    var View = Class.extend({
+    var Controller = Class.extend({
 
-        init: function (rootScope) {
+        init: function(rootScope) {
 
             if (!this.rootScope) {
                 throw {
@@ -18,9 +18,9 @@
             this.rootScope = rootScope;
         },
 
-        rootScope:undefined,
+        rootScope: undefined,
 
-        mergeData: function (targetSelector, templateName, data) {
+        mergeData: function(targetSelector, templateName, data) {
 
             if (this.rootScope && this.rootScope.viewEngine) {
                 this.rootScope.viewEngine.mergeData(targetSelector, templateName, data);
@@ -39,7 +39,7 @@
 
         mainTitle: document.querySelector(".view-title"),
 
-        setMainTitle: function (title) {
+        setMainTitle: function(title) {
 
             this.mainTitle.textContent = document.title = title.toLowerCase();
         }

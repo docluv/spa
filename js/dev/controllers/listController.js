@@ -1,23 +1,23 @@
-﻿(function () {
+(function() {
 
-    var listView = View.extend({
+    var listView = Controller.extend({
 
-        init: function (rootScope) {
+        init: function(rootScope) {
             this._super(rootScope);
         },
 
 
-        mergeList: function (data) {
+        mergeList: function(data) {
 
 
         },
 
-        loadPage: function (page) {
+        loadPage: function(page) {
 
 
         },
 
-        sortList: function (opetions) {
+        sortList: function(opetions) {
 
 
         }
