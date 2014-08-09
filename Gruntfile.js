@@ -44,8 +44,8 @@ module.exports = function(grunt) {
             },
             spa: {
                 src: [
-                    'js/dev/views/class.js',
-                    'js/dev/views/controller.js',
+                    'js/dev/controllers/class.js',
+                    'js/dev/controllers/controller.js',
                     //                  'js/dev/views/formView.js',
                     //                'js/dev/views/listView.js',
                     //         'js/dev/app/spaApp.js',

@@ -8,7 +8,7 @@
 
         init: function(rootScope) {
 
-            if (!this.rootScope) {
+            if (!rootScope) {
                 throw {
                     "Title": "Missing rootScope",
                     "Message": "The rootScope must be supplied to have a valid view"
@@ -22,8 +22,10 @@
 
         mergeData: function(targetSelector, templateName, data) {
 
-            if (this.rootScope && this.rootScope.viewEngine) {
-                this.rootScope.viewEngine.mergeData(targetSelector, templateName, data);
+            var controller = this;
+
+            if (controller.rootScope && controller.rootScope.viewEngine) {
+                controller.rootScope.viewEngine.mergeData(targetSelector, templateName, data);
             } else {
                 throw {
                     "Title": "Missing viewEngine",
@@ -46,6 +48,6 @@
 
     });
 
-    return (window.View = View);
+    return (window.Controller = Controller);
 
 })();

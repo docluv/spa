@@ -2,22 +2,22 @@
 /// <reference path="helper.extensions.js" />
 ;
 
-(function(window, undefined) {
+(function (window, undefined) {
 
     "use strict";
 
     var _gaq = _gaq || undefined;
 
     // Define a local copy of deferred
-    var spa = function(customSettings) {
+    var SPA = function (customSettings) {
 
-        var that = new spa.fn.init(),
+        var spa = new SPA.fn.init(),
             appName = "";
 
-        that.settings = $.extend({}, that.settings, customSettings);
+        spa.settings = $.extend({}, spa.settings, customSettings);
 
-        if (that.settings.AppContext) {
-            that.$rootScope = that.settings.AppContext;
+        if (spa.settings.AppContext) {
+            spa.$context = spa.settings.AppContext;
         } else {
 
             var spaApp = document.querySelector("[spa-app]");
@@ -30,7 +30,7 @@
                     appName = appName();
                 }
 
-                that.$rootScope = appName;
+                spa.$context = appName;
 
             } else {
                 console.error("Must have an application context defined");
@@ -43,30 +43,30 @@
 
         }
 
-        that.bp = that.settings.bp || backpack();
+        spa.viewCache = spa.settings.viewCache || Backpack();
 
-        that.titleElement = document.querySelector(that.settings.titleSelector);
+        spa.titleElement = document.querySelector(spa.settings.titleSelector);
 
-        if (that.settings.parseDOM) {
+        if (spa.settings.parseDOM) {
 
-            that.setupRoutes(that.settings.viewSelector);
+            spa.setupRoutes(spa.settings.viewSelector);
 
         }
 
-        window.addEventListener("hashchange", function() {
+        window.addEventListener("hashchange", function () {
 
-            that.swapView();
+            spa.swapView();
 
         });
 
-        if (that.getParameterByName(that.settings.forceReload)) {
+        if (spa.getParameterByName(spa.settings.forceReload)) {
 
             window.location.replace(window.location.href.split("?")[0] + "#!" +
-                that.getParameterByName(that.settings.forceReload));
-            return that;
+                spa.getParameterByName(spa.settings.forceReload));
+            return spa;
 
-        } else if (that.settings.initView) {
-            that.swapView();
+        } else if (spa.settings.initView) {
+            spa.swapView();
         }
 
         /*
@@ -74,33 +74,33 @@
         //decided to shelve this for the time being. Will complete this functionality
         //after the book is published
 
-        if (that.settings.asyncUrl && typeof that.settings.asyncUrl === "string") {
+        if (spa.settings.asyncUrl && typeof spa.settings.asyncUrl === "string") {
 
             document.addEventListener("DOMContentLoaded", function () {
 
                 e.target.removeEventListener(e.type, arguments.callee);
 
-                that.loadAsyncContent.call(that, that.settings.asyncUrl);
+                spa.loadAsyncContent.call(spa, spa.settings.asyncUrl);
             });
         }
 
         */
 
-        return that;
+        return spa;
 
     };
 
-    spa.fn = spa.prototype = {
+    SPA.fn = SPA.prototype = {
 
-        constructor: spa,
+        constructor: SPA,
 
-        init: function() {
+        init: function () {
             return this;
         },
 
         version: "0.0.6",
 
-        bp: undefined,
+        viewCache: undefined,
 
 
         //barrowing naming conventions from Angular
@@ -109,14 +109,14 @@
         //is confusing for many developers new to JavaScript.
         //Changing the name abstracts the mind from associating
         //the name to something they perceive as annoying.
-        $rootScope: undefined,
-        $scope: undefined,
-        $oldScope: undefined,
+        $context: undefined,
+        $controller: undefined,
+        $oldController: undefined,
 
-        setupRoutes: function() {
+        setupRoutes: function () {
 
-            var that = this,
-                settings = that.settings,
+            var spa = this,
+                settings = spa.settings,
                 routes = $.extend($.parseLocalStorage("routes") || {}, settings.routes),
                 i = 0,
                 rawPath, view, route, viewId,
@@ -131,24 +131,24 @@
                     viewId = view.getAttribute("id");
                     rawPath = (view.hasAttribute("spa-route") ? view.getAttribute("spa-route") : "");
 
-                    route = that.createRoute(viewId, rawPath, view);
+                    route = spa.createRoute(viewId, rawPath, view);
                     routes[route.path] = route;
 
                 }
 
             }
 
-            that.settings.routes = routes;
+            spa.settings.routes = routes;
 
             localStorage.setItem("routes", JSON.stringify(routes));
 
-            if (that.bp && (that.getParameterByName("_escaped_fragment_") === "")) {
-                that.bp.updateViews(settings.viewSelector);
+            if (spa.viewCache && (spa.getParameterByName("_escaped_fragment_") === "")) {
+                spa.viewCache.updateViews(settings.viewSelector);
             }
 
         },
 
-        createRoute: function(viewId, rawPath, view) {
+        createRoute: function (viewId, rawPath, view) {
 
             //need to check for duplicate path
             return {
@@ -173,7 +173,7 @@
 
         },
 
-        matchRouteByPath: function(path, routes) {
+        matchRouteByPath: function (path, routes) {
 
             if (!routes) {
                 routes = this.settings.routes;
@@ -221,7 +221,7 @@
             return route;
         },
 
-        matchRouteById: function(id, routes) {
+        matchRouteById: function (id, routes) {
 
             if (!routes) {
                 routes = this.settings.routes;
@@ -235,21 +235,13 @@
                 }
             }
 
-            //for (var i = 0; i < routes.length; i++) {
-
-            //    if (routes[i].viewId === id) {
-            //        return route[i];
-            //    }
-
-            //}
-
         },
 
         //  newView: undefined, //placeholder for new view
         //  currentView: undefined, //placeholder for current view before a swap
         animation: undefined,
 
-        getParameterByName: function(name) {
+        getParameterByName: function (name) {
 
             name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
 
@@ -259,7 +251,7 @@
             return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
         },
 
-        getVendorPropertyName: function(prop) {
+        getVendorPropertyName: function (prop) {
 
             var prefixes = ['Moz', 'Webkit', 'O', 'ms'],
                 vendorProp, i,
@@ -288,7 +280,7 @@
         },
 
         // repurposed helper
-        cssPrefix: function(suffix) {
+        cssPrefix: function (suffix) {
 
             if (!suffix) {
                 return '';
@@ -324,7 +316,7 @@
             return "";
         },
 
-        removeExtraViews: function(currentView) {
+        removeExtraViews: function (currentView) {
 
             var length = currentView.length;
 
@@ -336,7 +328,7 @@
             }
         },
 
-        pushGA: function(path) {
+        pushAnalytics: function (path) {
 
             //if Google Analytics available, then push the path
             if (_gaq !== undefined) {
@@ -344,53 +336,53 @@
             }
         },
 
-        swapView: function() {
+        swapView: function () {
 
-            var that = this,
-                settings = that.settings,
+            var spa = this,
+                settings = spa.settings,
                 route, oldRoute, anim,
                 hash = window.location.hash,
                 newView,
-                hasEscapeFragment = that.getParameterByName("_escaped_fragment_"),
+                hasEscapeFragment = spa.getParameterByName("_escaped_fragment_"),
                 hashFragment = (hash !== "#") ? hash.replace("#!", "") : "",
                 path = hashFragment.split(":")[0],
                 currentView = document.querySelectorAll("." + settings.currentClass);
 
-            that.$oldScope = that.$scope;
+            spa.$oldController = spa.$controller;
 
             if (currentView.length && currentView.length > 1) {
                 //adding this because I found myself sometimes tapping items to launch a new view before the animation was complete.
-                that.removeExtraViews(currentView);
+                spa.removeExtraViews(currentView);
             }
 
             //convert nodelist to a single node
             currentView = currentView[0];
 
             if (currentView && currentView.id) {
-                oldRoute = that.matchRouteById(currentView.id);
+                oldRoute = spa.matchRouteById(currentView.id);
             }
 
-            route = that.matchRouteByPath(path);
+            route = spa.matchRouteByPath(path);
 
             if (route !== undefined) {
 
-                if (that.$rootScope[route.viewId] &&
-                    typeof that.$rootScope[route.viewId] === "function") {
+                if (spa.$context[route.viewId] &&
+                    typeof spa.$context[route.viewId] === "function") {
 
-                    that.$scope = new that.$rootScope[route.viewId](that.$rootScope);
+                    spa.$controller = new spa.$context[route.viewId](spa.$context);
 
-                } else if (that.$rootScope[route.viewId] &&
-                    typeof that.$rootScope[route.viewId] === "object") {
+                } else if (spa.$context[route.viewId] &&
+                    typeof spa.$context[route.viewId] === "object") {
 
-                    that.$scope = new that.$rootScope[route.viewId];
+                    spa.$controller = new spa.$context[route.viewId];
 
                 } else {
                     return;
                 }
 
-                that.pushGA(path);
+                spa.pushAnalytics(path);
 
-                that.ensureViewAvailable(currentView, route.viewId);
+                spa.ensureViewAvailable(currentView, route.viewId);
 
                 newView = document.getElementById(route.viewId);
 
@@ -398,20 +390,20 @@
 
                     if (currentView) {
 
-                        //that.makeViewCallback(oldRoute, "beforeunload");
+                        //spa.makeViewCallback(oldRoute, "beforeunload");
 
-                        that.makeViewCallback1(that.$oldScope, "beforeunload");
+                        spa.makeViewCallback1(spa.$oldController, "beforeunload");
 
-                        if (that.hasAnimations()) {
+                        if (spa.hasAnimations()) {
 
-                            anim = that.getAnimation(route);
-                            that.animation = anim;
+                            anim = spa.getAnimation(route);
+                            spa.animation = anim;
 
                             if (anim) {
 
                                 currentView.addEventListener(
-                                    that.transitionend[that.cssPrefix("animation")], function(e) {
-                                        that.endSwapAnimation.call(that, oldRoute, route);
+                                    spa.transitionend[spa.cssPrefix("animation")], function (e) {
+                                        spa.endSwapAnimation.call(spa, oldRoute, route);
                                         currentView = undefined;
                                     });
 
@@ -425,7 +417,7 @@
                             } else {
 
                                 $(newView).addClass(settings.currentClass);
-                                that.endSwapAnimation.call(that, oldRoute, route);
+                                spa.endSwapAnimation.call(spa, oldRoute, route);
                             }
 
                         }
@@ -435,8 +427,8 @@
                         if (settings.intoAnimation) {
 
                             newView.addEventListener(
-                                that.transitionend[that.cssPrefix("animation")], function(e) {
-                                    that.endSwapAnimation.call(that, oldRoute, route);
+                                spa.transitionend[spa.cssPrefix("animation")], function (e) {
+                                    spa.endSwapAnimation.call(spa, oldRoute, route);
                                     currentView = undefined;
                                 });
 
@@ -446,22 +438,22 @@
                         } else {
 
                             $(newView).addClass(settings.currentClass);
-                            that.endSwapAnimation.call(that, oldRoute, route);
+                            spa.endSwapAnimation.call(spa, oldRoute, route);
                         }
 
                     }
 
-                    that.setDocumentTitle(route);
+                    spa.setDocumentTitle(route);
 
                     if (route) {
 
-                        //that.makeViewCallback(route, "beforeonload");
-                        //that.makeViewCallback(route, "onload");
-                        //that.makeViewCallback(route, "afteronload");
+                        //spa.makeViewCallback(route, "beforeonload");
+                        //spa.makeViewCallback(route, "onload");
+                        //spa.makeViewCallback(route, "afteronload");
 
-                        that.makeViewCallback1(that.$scope, "beforeonload", route.paramValues);
-                        that.makeViewCallback1(that.$scope, "onload", route.paramValues);
-                        that.makeViewCallback1(that.$scope, "afteronload", route.paramValues);
+                        spa.makeViewCallback1(spa.$controller, "beforeonload", route.paramValues);
+                        spa.makeViewCallback1(spa.$controller, "onload", route.paramValues);
+                        spa.makeViewCallback1(spa.$controller, "afteronload", route.paramValues);
                     }
 
                 }
@@ -476,7 +468,7 @@
 
         },
 
-        getAnimation: function(route) {
+        getAnimation: function (route) {
 
             if (!route) {
                 return this.settings.viewTransition;
@@ -486,17 +478,17 @@
 
         },
 
-        endSwapAnimation: function(route, newRoute) {
+        endSwapAnimation: function (route, newRoute) {
             //currentView, newView, 
-            var that = this,
+            var spa = this,
                 currentView = document.querySelector(".current.out"),
                 newView = document.getElementById(newRoute.viewId),
                 parent,
-                anim = that.animation;
+                anim = spa.animation;
 
             if (route) {
-                that.makeViewCallback1(that.$oldScope, "unload");
-                that.makeViewCallback1(that.$oldScope, "afterunload");
+                spa.makeViewCallback1(spa.$oldController, "unload");
+                spa.makeViewCallback1(spa.$oldController, "afterunload");
             }
 
             if (newView.classList.contains("in")) {
@@ -504,7 +496,7 @@
                 newView.classList.remove(anim);
             }
 
-            if (currentView && that.bp && currentView.parentNode) {
+            if (currentView && spa.viewCache && currentView.parentNode) {
 
                 parent = currentView.parentNode
                 parent.removeChild(currentView);
@@ -514,11 +506,11 @@
         },
 
         //make sure the view is actually available, this relies on backpack to supply the markup and inject it into the DOM
-        ensureViewAvailable: function(currentView, newViewId) {
-            //must have backpack or something similar that implements its interface
-            if (this.bp) {
+        ensureViewAvailable: function (currentView, newViewId) {
+            //must have backpack or something similar spa implements its interface
+            if (this.viewCache) {
 
-                var view = this.bp.getViewInfo(newViewId),
+                var view = this.viewCache.getViewInfo(newViewId),
                     newView, loc;
 
                 if (view) {
@@ -542,30 +534,27 @@
 
         },
 
-        makeViewCallback1: function(scope, action, params) {
+        makeViewCallback1: function (controller, action, params) {
 
-            if (scope && scope[action]) {
-                scope[action].call(scope, params || {});
+            if (controller && controller[action]) {
+                controller[action].call(controller, params || {});
             }
-
 
         },
 
-        makeViewCallback: function(route, action) {
+        makeViewCallback: function (route, action) {
 
-            var that = this,
-                $rootScope = that.$rootScope,
-                settings = that.settings,
+            var spa = this,
+                $context = spa.$context,
+                settings = spa.settings,
                 a, cbPaths, callback;
-
-            //       console.info("making " + action + " callback");
 
             if (action && !route[action]) {
 
-                if ($rootScope) {
+                if ($context) {
 
-                    if ($rootScope[route.viewModule] && $rootScope[route.viewModule][action]) {
-                        $rootScope[route.viewModule][action].call($rootScope, route.paramValues || {});
+                    if ($context[route.viewModule] && $context[route.viewModule][action]) {
+                        $context[route.viewModule][action].call($context, route.paramValues || {});
                     }
 
                 }
@@ -580,19 +569,19 @@
             for (a = 1; a < cbPaths.length; a++) {
 
                 if (a === 1) {
-                    that = callback;
+                    spa = callback;
                 }
 
                 callback = callback[cbPaths[a]];
             }
 
             if (callback) {
-                callback.call(that, route.paramValues || {});
+                callback.call(spa, route.paramValues || {});
             }
 
         },
 
-        setDocumentTitle: function(route) {
+        setDocumentTitle: function (route) {
 
             var title = route.title,
                 i;
@@ -611,7 +600,7 @@
 
         },
 
-        createFragment: function(htmlStr) {
+        createFragment: function (htmlStr) {
 
             var frag = document.createDocumentFragment(),
                 temp = document.createElement("div");
@@ -625,7 +614,7 @@
             return frag;
         },
 
-        hasAnimations: function() {
+        hasAnimations: function () {
 
             var animation = false,
                 elm = document.createElement("div"),
@@ -655,12 +644,11 @@
 
         },
 
-        storeAsyncContent: function(content) {
-
-            this.bp.updateViewsFromFragment(this.settings.viewSelector, content);
-        },
-
         /*
+        storeAsyncContent: function (content) {
+
+            this.viewCache.updateViewsFromFragment(this.settings.viewSelector, content);
+        },
 
         loadAsyncContent: function (url, callback) {
 
@@ -702,8 +690,8 @@
     };
 
     // Give the init function the spa prototype for later instantiation
-    spa.fn.init.prototype = spa.fn;
+    SPA.fn.init.prototype = SPA.fn;
 
-    return (window.spa = spa);
+    return (window.SPA = SPA);
 
 })(window);

@@ -1,95 +1,105 @@
 ;
 //Backpack is a deferred content managment library with single page and mobile applications in mind
-(function(window, undefined) {
+(function (window, undefined) {
 
     "use strict";
 
-    var backpack = function(customSettings) {
+    var Backpack = function (customSettings) {
 
-        var that = new backpack.fn.init(customSettings);
+        var backpack = new Backpack.fn.init();
 
-        that.settings = $.extend({}, that.settings, customSettings);
+        backpack.settings = $.extend({}, backpack.settings, customSettings);
 
-        return that;
+        return backpack;
     };
 
-    backpack.fn = backpack.prototype = {
+    Backpack.fn = Backpack.prototype = {
 
-        constructor: backpack,
+        constructor: Backpack,
 
-        init: function() {
+        init: function () {
 
             return this;
         },
 
-        version: "0.0.3",
+
+        version: "0.0.4",
 
 
-        //keep
-        updateViews: function(selector) {
+        updateViews: function (selector) {
 
-            var i, views = document.querySelectorAll(selector);
+            var backpack = this,
+                views = document.querySelectorAll(selector);
 
-            for (i = 0; i < views.length; i++) {
-                this.saveViewToStorage(views[i]);
-            }
+            [].forEach.call(views, function (view) {
+                backpack.saveViewToStorage(view);
+            });
 
         },
 
-        //keep, but modify the promise stuff, take it out 4 now
-        saveViewToStorage: function(e) {
+        saveViewToStorage: function (view) {
 
-            if (typeof e === "string") { //assume this is the element id
-                e = document.getElementById(e);
+            var backpack = this;
+
+            //assume this is the element id if view is a string
+            if (typeof view === "string") {
+                view = document.getElementById(view);
             }
 
-            if (e) {
+            if (view) {
 
-                this.storeViewInfo(this.parseViewInfo(e));
+                backpack.storeViewInfo(backpack.parseViewInfo(view));
 
-                if (e.parentNode && !(e.className.search(this.settings.currentClass) > -1)) {
-                    e.parentNode.removeChild(e);
+                if (view.parentNode && !(view.className.search(backpack.settings.currentClass) > -1)) {
+                    view.parentNode.removeChild(view);
                 }
 
-                e = undefined;
+                view = undefined;
             }
 
         },
 
-        //keep, but update
-        parseViewInfo: function(ve) {
+        parseViewInfo: function (view) {
+
+            if (typeof view === "string") {
+                view = document.getElementById(view);
+            }
+
+            if (typeof view === undefined || view === null) {
+                return;
+            }
 
             return {
-                pageId: ve.id,
-                viewTitle: (ve.hasAttribute("spa-title") ?
-                    ve.getAttribute("spa-title") :
+                pageId: view.id,
+                viewTitle: (view.hasAttribute("spa-title") ? view.getAttribute("spa-title") :
                     this.settings.defaultTitle),
-                tranistion: (ve.hasAttribute("spa-transition") ?
-                    ve.getAttribute("spa-transition") :
-                    ""), //need a nice way to define the default animation
-                content: ve.outerHTML
+                //need a nice way to define the default animation
+                tranistion: (view.hasAttribute("spa-transition") ? view.getAttribute("spa-transition") : ""),
+                content: view.outerHTML
             };
 
         },
 
-        //keep
-        storeViewInfo: function(viewInfo) {
+        storeViewInfo: function (viewInfo) {
 
-            viewInfo = $.extend({}, this.pageSettings, viewInfo);
+            var backpack = this;
 
-            localStorage.setItem(this.settings.appName + "-" + viewInfo.pageId,
+            viewInfo = $.extend({}, backpack.pageSettings, viewInfo);
+
+            localStorage.setItem(backpack.settings.appName + "-" + viewInfo.pageId,
                 JSON.stringify(viewInfo));
 
         },
 
-        //keep
-        getViewInfo: function(viewId) {
+        getViewInfo: function (viewId) {
 
-            var viewData = localStorage[this.settings.appName + "-" + viewId],
+            var backpack = this,
+                viewData = localStorage[this.settings.appName + "-" + viewId],
                 view;
 
             if (!viewData) {
 
+                //The view did not exist in storage so let's see if it is in the DOM
                 view = document.getElementById(viewId);
 
                 if (view) {
@@ -121,9 +131,9 @@
 
     };
 
-    // Give the init function the backpack prototype for later instantiation
-    backpack.fn.init.prototype = backpack.fn;
+    // Give the init function the Backpack prototype for later instantiation
+    Backpack.fn.init.prototype = Backpack.fn;
 
-    return (window.backpack = backpack);
+    return (window.Backpack = Backpack);
 
 })(window);
