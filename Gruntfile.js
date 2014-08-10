@@ -30,7 +30,7 @@ module.exports = function(grunt) {
         },
         watch: {
             scripts: {
-                files: ['js/dev/*.js'],
+                files: ['**/js/dev/*.js'],
                 tasks: ['uglify'],
                 options: {
                     spawn: false,
@@ -58,6 +58,12 @@ module.exports = function(grunt) {
                     'js/libs/backpack.js'
                 ],
                 dest: 'js/backpack.min.js'
+            },
+            googleAnalytics: {
+                src: [
+                    'js/libs/google-analytics.js'
+                ],
+                dest: 'js/google-analytics.min.js'
             }
 
         }

@@ -1,23 +1,24 @@
 {
-  "name": "SPAjs",
-  "version": "0.6.0",
-    "author" : "Chris Love",
-    "private" : true,
-  "homepage": "https://github.com/docluv/spajs",
-  "license": {
-    "type": "Apache",
-    "url": "https://github.com/docluv/spajs/LICENSE"
-  },
+    "name": "SPAjs",
+    "version": "0.6.0",
+    "author": "Chris Love",
+    "private": true,
+    "homepage": "https://github.com/docluv/spajs",
+    "license": {
+        "type": "Apache",
+        "url": "https://github.com/docluv/spajs/LICENSE"
+    },
 
-  "devDependencies": {
-		"grunt" :                       "~0.4.*",
-		"grunt-contrib-cssmin":         "*",
-		"grunt-contrib-qunit":         "*",
-		"grunt-contrib-jshint":         "*",
-		"grunt-contrib-uglify":         "*",
-        "grunt-contrib-watch":         "*",
-        "grunt-bump":                   "*",
-		"matchdep":                     "*"
+    "devDependencies": {
+        "grunt": "~0.4.*",
+        "grunt-contrib-cssmin": "*",
+        "grunt-contrib-qunit": "*",
+        "grunt-contrib-jshint": "*",
+        "grunt-contrib-uglify": "*",
+        "grunt-contrib-watch": "*",
+        "grunt-bump": "*",
+        "grunt-contrib-watch": "*",
+        "matchdep": "*"
 
-  }
+    }
 }

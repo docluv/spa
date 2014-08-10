@@ -6,7 +6,7 @@
 
     "use strict";
 
-    var _gaq = _gaq || undefined;
+//    var _gaq = _gaq || undefined;
 
     // Define a local copy of deferred
     var SPA = function (customSettings) {
@@ -44,6 +44,8 @@
         }
 
         spa.viewCache = spa.settings.viewCache || Backpack();
+
+        spa.analytics = spa.settings.analytics;
 
         spa.titleElement = document.querySelector(spa.settings.titleSelector);
 
@@ -328,12 +330,14 @@
             }
         },
 
-        pushAnalytics: function (path) {
+        pushView: function (path) {
 
-            //if Google Analytics available, then push the path
-            if (_gaq !== undefined) {
-                _gaq.push(['_trackPageview', path]);
+            var spa = this;
+
+            if (spa.analytics) {
+                spa.analytics.pushView(['_trackPageview', path]);
             }
+
         },
 
         swapView: function () {
@@ -380,7 +384,7 @@
                     return;
                 }
 
-                spa.pushAnalytics(path);
+                spa.pushView(path);
 
                 spa.ensureViewAvailable(currentView, route.viewId);
 
