@@ -679,7 +679,7 @@
 
         settings: {
             routes: [],
-            viewSelector: "script[type='text/x-mustache-template']",
+            viewSelector: "[type='text/x-Rivits-template']",
             currentClass: "current",
             mainWrappperSelector: "main",
             NotFoundView: "nofoundView",
