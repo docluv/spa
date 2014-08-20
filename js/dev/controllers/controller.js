@@ -20,12 +20,12 @@
 
         rootScope: undefined,
 
-        mergeData: function(targetSelector, templateName, data) {
+        bind: function(targetSelector, templateName, data) {
 
             var controller = this;
 
             if (controller.rootScope && controller.rootScope.viewEngine) {
-                controller.rootScope.viewEngine.mergeData(targetSelector, templateName, data);
+                controller.rootScope.viewEngine.bind(targetSelector, templateName, data);
             } else {
                 throw {
                     "Title": "Missing viewEngine",

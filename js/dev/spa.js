@@ -6,7 +6,7 @@
 
     "use strict";
 
-//    var _gaq = _gaq || undefined;
+    //    var _gaq = _gaq || undefined;
 
     // Define a local copy of deferred
     var SPA = function (customSettings) {
@@ -145,7 +145,7 @@
             localStorage.setItem("routes", JSON.stringify(routes));
 
             if (spa.viewCache && (spa.getParameterByName("_escaped_fragment_") === "")) {
-                spa.viewCache.updateViews(settings.viewSelector);
+                spa.viewCache.parseViews(settings.viewSelector);
             }
 
         },
@@ -512,24 +512,28 @@
         //make sure the view is actually available, this relies on backpack to supply the markup and inject it into the DOM
         ensureViewAvailable: function (currentView, newViewId) {
             //must have backpack or something similar spa implements its interface
-            if (this.viewCache) {
 
-                var view = this.viewCache.getViewInfo(newViewId),
-                    newView, loc;
+            var spa = this,
+                view,
+                newView, loc;
+
+            if (spa.viewCache) {
+
+                view = spa.viewCache.getView(newViewId);
 
                 if (view) {
-                    newView = this.createFragment(view.content);
+                    newView = spa.createFragment(view);
                 } else {
                     loc = window.location.href.split("#!");
                     window.location.replace(loc[0] + "?" +
-                        this.settings.forceReload + "=" + loc[1]);
+                        spa.settings.forceReload + "=" + loc[1]);
                 }
 
                 if (currentView) {
                     currentView.parentNode
                         .insertBefore(newView, currentView);
                 } else {
-                    document.querySelector(this.settings.mainWrappperSelector)
+                    document.querySelector(spa.settings.mainWrappperSelector)
                         .appendChild(newView);
                 }
 
@@ -675,7 +679,7 @@
 
         settings: {
             routes: [],
-            viewSelector: ".content-pane",
+            viewSelector: "script[type='text/x-mustache-template']",
             currentClass: "current",
             mainWrappperSelector: "main",
             NotFoundView: "nofoundView",
