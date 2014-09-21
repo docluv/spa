@@ -12,7 +12,8 @@
     var SPA = function (customSettings) {
 
         var spa = new SPA.fn.init(),
-            appName = "";
+            appName = "",
+            AppContext;
 
         spa.settings = $.extend({}, spa.settings, customSettings);
 
@@ -43,17 +44,22 @@
 
         }
 
-        spa.viewCache = spa.settings.viewCache || Backpack();
+        window.addEventListener("DOMContentLoaded", function () {
 
-        spa.analytics = spa.settings.analytics;
+            spa.viewCache = spa.settings.viewCache || Backpack();
 
-        spa.titleElement = document.querySelector(spa.settings.titleSelector);
+            spa.analytics = spa.settings.analytics;
 
-        if (spa.settings.parseDOM) {
+            spa.titleElement = document.querySelector(spa.settings.titleSelector);
 
-            spa.setupRoutes(spa.settings.viewSelector);
+            if (spa.settings.parseDOM) {
 
-        }
+                spa.setupRoutes(spa.settings.viewSelector);
+
+            }
+
+        });
+
 
         window.addEventListener("hashchange", function () {
 
@@ -679,7 +685,7 @@
 
         settings: {
             routes: [],
-            viewSelector: "[type='text/x-Rivits-template']",
+            viewSelector: "[type='text/x-Rivets-template']",
             currentClass: "current",
             mainWrappperSelector: "main",
             NotFoundView: "nofoundView",
