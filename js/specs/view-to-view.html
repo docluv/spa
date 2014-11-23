@@ -1,0 +1,116 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>View to View</title>
+    <link href="animations.css" rel='stylesheet'>
+    <link href="swap-test.css" rel='stylesheet'>
+
+</head>
+<body spa-app="spa-test">
+
+    <header class="spa-test-header">
+        <h1>SPA View Swap Tester</h1>
+        <nav>
+            <a href="#!simpleview1" class="menu-item">Simple View 1</a>
+            <a href="#!simpleview2" class="menu-item">Simple View 2</a>
+            <a href="#!childview1" class="menu-item">Child View 1</a>
+            <a href="#!childview2" class="menu-item">Child View 2</a>
+            <a href="#!childview3" class="menu-item">Child View 3</a>
+            <a href="#!childview4" class="menu-item">Child View 4</a>
+        </nav>
+    </header>
+
+
+    <main class="main-content" role="main"></main>
+
+    ﻿<section id="testLayout1" type="text/x-Rivets-template" class="spa-layout layout1"
+              spa-title="Layout 1"
+              spa-view-type="layout"
+              spa-transition="slide">
+
+        <h1>Layout 1</h1>
+
+        <section class="spa-child-view"></section>
+
+    </section>
+
+    ﻿<section id="testLayout2" type="text/x-Rivets-template" class="spa-layout layout2"
+              spa-title="Layout 2"
+              spa-view-type="layout"
+              spa-transition="slide">
+
+        <h1>Layout 2</h1>
+
+        <section class="spa-child-view"></section>
+
+    </section>
+
+    ﻿<section id="simpleview1" type="text/x-Rivets-template" class="spa-view view1"
+         spa-transition="slide"
+         spa-route="simpleview1">
+
+    <h2>Simple View 1</h2>
+
+
+</section>
+
+    ﻿<section id="simpleview2" type="text/x-Rivets-template" class="spa-view view2"
+              spa-transition="slide"
+              spa-route="simpleview2">
+
+        <h2>Simple View 2</h2>
+
+
+    </section>
+
+    ﻿<section id="childView3" type="text/x-Rivets-template" class="spa-view childview3"
+         spa-transition="slide"
+         spa-layout="testLayout2"
+         spa-route="childview3">
+
+    <h2>Child View 3</h2>
+
+
+</section>
+
+    ﻿<section id="childView4" type="text/x-Rivets-template" class="spa-view childview4"
+              spa-transition="slide"
+              spa-layout="testLayout2"
+              spa-route="childview4">
+
+        <h2>Child View 4</h2>
+
+
+    </section>
+
+    ﻿<section id="childView1" type="text/x-Rivets-template" class="spa-view childview1"
+              spa-transition="slide"
+              spa-layout="testLayout1"
+              spa-route="childview1">
+
+        <h2>Child View 1</h2>
+
+
+    </section>
+
+    ﻿<section id="childView2" type="text/x-Rivets-template" class="spa-view childview2"
+              spa-transition="slide"
+              spa-layout="testLayout1"
+              spa-route="childview2">
+
+        <h2>Child View 2</h2>
+
+
+    </section>
+
+    <script src='../libs/dollarbill.min.js'></script>
+    <script src='../dev/spa.js'></script>
+    <script src='../dev/controllers/class.js'></script>
+    <script src='../dev/controllers/controller.js'></script>
+    <script src='../libs/rivets.min.js'></script>
+    <script src='../libs/rivits.view-engine.js'></script>
+    <script src="test.bootstrap.js"></script>
+
+
+</body>
+</html>
