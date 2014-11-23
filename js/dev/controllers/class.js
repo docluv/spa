@@ -54,7 +54,6 @@
 
                   };
 
-
               })(name, prop[name]) :
 
               prop[name];

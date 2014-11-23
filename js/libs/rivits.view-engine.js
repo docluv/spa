@@ -1,23 +1,23 @@
-﻿/// <reference path="rivits.min.js" />
+﻿/// <reference path="rivets.min.js" />
 
 
 ;
-//RivitsViewEngine is a deferred content managment library with single page and mobile applications in mind
+//RivetsViewEngine is a deferred content management library with single page and mobile applications in mind
 (function (window, undefined) {
 
     "use strict";
 
-    var RivitsViewEngine = function (settings) {
+    var RivetsViewEngine = function (settings) {
 
-        var rivitsViewEngine = new RivitsViewEngine.fn.init();
+        var rivetsViewEngine = new RivetsViewEngine.fn.init();
 
 
-        return rivitsViewEngine;
+        return rivetsViewEngine;
     };
 
-    RivitsViewEngine.fn = RivitsViewEngine.prototype = {
+    RivetsViewEngine.fn = RivetsViewEngine.prototype = {
 
-        constructor: RivitsViewEngine,
+        constructor: RivetsViewEngine,
 
         init: function () {
 
@@ -26,21 +26,22 @@
 
         version: "0.0.1",
 
-//        viewCache: undefined,
         eventPrefix: "spa-",
-        $rootScope: undefined,
         templateService: undefined,
-        templateType: "[type='text/x-Rivits-template']",
-        appPrefix: "RivitsApp-",
+        templateType: "[type='text/x-Rivets-template']",
+        appPrefix: "RivetsApp-",
 
         views: {},
 
+        //required function
         parseViews: function (remove) {
 
-            var rivitsViewEngine = this,
+            var rivetsViewEngine = this,
                 i, temp, viewMarkup,
-                views = $.parseLocalStorage(rivitsViewEngine.appPrefix + "views"),
-                t = document.querySelectorAll(rivitsViewEngine.templateType);
+                views = JSON.parse(localStorage.getItem(rivetsViewEngine.appPrefix + "views")),
+                t = document.querySelectorAll(rivetsViewEngine.templateType);
+
+            views = views || {};
 
             if (remove === undefined) {
                 remove = true; //default setting
@@ -62,12 +63,77 @@
 
             }
 
-            rivitsViewEngine.setViews(views);
+            rivetsViewEngine.setViews(views);
 
         },
 
-        getView: function (viewId) {
-            return this.views[viewId];
+        createChildView: function (route) {
+
+            //only return the layout and the child view if the layout does not already exist.
+
+            var rivetsViewEngine = this,
+                //layout = document.getElementById(route.layout),
+                layout,
+                view,
+                viewAnchor;
+
+//            if (!layout) {
+
+                layout = rivetsViewEngine.views[route.layout];
+
+                if (layout) {
+
+                    layout = rivetsViewEngine.createFragment(layout);
+                    layout = layout.firstChild;
+
+                    viewAnchor = layout.querySelector(".spa-child-view");
+
+                    if (viewAnchor) {
+                        viewAnchor.innerHTML = rivetsViewEngine.views[route.viewId];
+                    }
+
+                    return layout.outerHTML;
+                } else {
+
+                    view = rivetsViewEngine.createFragment(rivetsViewEngine.views[route.viewId]);
+                    return view.outerHTML;
+                }
+
+                return;
+
+            //}
+
+            //return rivetsViewEngine.views[route.viewId];
+
+        },
+
+        createFragment: function (htmlStr) {
+
+            var// frag = document.createDocumentFragment(),
+                temp = document.createElement("div");
+
+            temp.innerHTML = htmlStr;
+
+            //            frag.appendChild(temp);
+
+            return temp;
+        },
+
+        //required function
+        getView: function (route) {
+
+            var rivetsViewEngine = this;
+
+            if (route.layout) {
+
+                return rivetsViewEngine.createChildView(route);
+
+            } else {
+
+                return rivetsViewEngine.views[route.viewId];
+
+            }
+
         },
 
         getViews: function () {
@@ -87,18 +153,18 @@
 
         setViews: function (views) {
 
-            var rivitsViewEngine = this,
+            var rivetsViewEngine = this,
                 view;
 
             for (view in views) {
-                rivitsViewEngine.setView(view, views[view]);
+                rivetsViewEngine.setView(view, views[view]);
             }
 
         },
 
         addViews: function (views) {
 
-            var rivitsViewEngine = this,
+            var rivetsViewEngine = this,
                 name, copy;
 
             for (name in views) {
@@ -106,24 +172,24 @@
                 copy = views[name];
 
                 // Prevent never-ending loop
-                if (rivitsViewEngine.views === copy) {
+                if (rivetsViewEngine.views === copy) {
                     continue;
                 }
 
                 if (copy !== undefined) {
-                    rivitsViewEngine.views[name] = copy;
+                    rivetsViewEngine.views[name] = copy;
                 }
             }
 
-            rivitsViewEngine.saveViews();
+            rivetsViewEngine.saveViews();
 
         },
 
         saveViews: function () {
 
-            var rivitsViewEngine = this;
+            var rivetsViewEngine = this;
 
-            localStorage.setItem(rivitsViewEngine.appPrefix + "views", JSON.stringify(rivitsViewEngine.views));
+            localStorage.setItem(rivetsViewEngine.appPrefix + "views", JSON.stringify(rivetsViewEngine.views));
 
         },
 
@@ -135,42 +201,49 @@
 
         },
 
-        bind: function (targetSelector, templateName, model) {
+        boundView: undefined,
 
-            if ((typeof targetSelector !== "string") ||
-               (typeof templateName !== "string") ||
-                model === undefined) {
+        bind: function (targetSelector, model) {
+
+            if ((typeof targetSelector === "string") && model === undefined) {
 
                 throw {
-                    Name: "RivitsViewEngine Error",
+                    Name: "RivetsViewEngine Error",
                     Description: "missing argument in mergeData"
                 }
 
                 return;
             }
 
-            var rivitsViewEngine = this,
+            if ((typeof targetSelector === "object")) {
+                model = targetSelector;
+                targetSelector = "body";
+            }
+
+            var rivetsViewEngine = this,
                 t = document.querySelector(targetSelector);
+
+
+            if (rivetsViewEngine.boundView) {
+                rivetsViewEngine.boundView.unbind();
+            }
+
 
             //verify it is a single node.
             if (t.length && t.length > 0) {
                 t = t[0];
             }
 
-            if (rivitsViewEngine.views[templateName]) {
-
-                t.innerHTML = rivitsViewEngine.views[templateName];
-                rivits.bind(t.firstChild, model);
-
-            }
+            rivetsViewEngine.boundView = rivets.bind(t, model);
 
         }
 
     };
 
-    // Give the init function the RivitsViewEngine prototype for later instantiation
-    RivitsViewEngine.fn.init.prototype = RivitsViewEngine.fn;
+    // Give the init function the RivetsViewEngine prototype for later instantiation
+    RivetsViewEngine.fn.init.prototype = RivetsViewEngine.fn;
 
-    return (window.RivitsViewEngine = RivitsViewEngine);
+    return (window.RivetsViewEngine = RivetsViewEngine);
 
 })(window);
+

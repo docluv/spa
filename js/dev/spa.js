@@ -6,7 +6,9 @@
 
     "use strict";
 
-    //    var _gaq = _gaq || undefined;
+    //contants
+    var leadingDot = ".",
+        spaLayout = ".spa-layout";
 
     // Define a local copy of deferred
     var SPA = function (customSettings) {
@@ -46,7 +48,8 @@
 
         window.addEventListener("DOMContentLoaded", function () {
 
-            spa.viewCache = spa.settings.viewCache || Backpack();
+            //cannot assume backpack anymore
+            spa.viewEngine = spa.settings.viewEngine || Backpack();
 
             spa.analytics = spa.settings.analytics;
 
@@ -58,24 +61,25 @@
 
             }
 
+
+            window.addEventListener("hashchange", function () {
+
+                spa.swapView();
+
+            });
+
+            if (spa.getParameterByName(spa.settings.forceReload)) {
+
+                window.location.replace(window.location.href.split("?")[0] + "#!" +
+                    spa.getParameterByName(spa.settings.forceReload));
+                return spa;
+
+            } else if (spa.settings.initView) {
+                spa.swapView();
+            }
+
         });
 
-
-        window.addEventListener("hashchange", function () {
-
-            spa.swapView();
-
-        });
-
-        if (spa.getParameterByName(spa.settings.forceReload)) {
-
-            window.location.replace(window.location.href.split("?")[0] + "#!" +
-                spa.getParameterByName(spa.settings.forceReload));
-            return spa;
-
-        } else if (spa.settings.initView) {
-            spa.swapView();
-        }
 
         /*
 
@@ -106,17 +110,10 @@
             return this;
         },
 
-        version: "0.0.6",
+        version: "0.1.1",
 
-        viewCache: undefined,
+        viewEngine: undefined,
 
-
-        //barrowing naming conventions from Angular
-        //This is like renaming a brand with a bad reputation,
-        //maintaining and using the context (this) properly
-        //is confusing for many developers new to JavaScript.
-        //Changing the name abstracts the mind from associating
-        //the name to something they perceive as annoying.
         $context: undefined,
         $controller: undefined,
         $oldController: undefined,
@@ -140,7 +137,12 @@
                     rawPath = (view.hasAttribute("spa-route") ? view.getAttribute("spa-route") : "");
 
                     route = spa.createRoute(viewId, rawPath, view);
-                    routes[route.path] = route;
+
+                    if (route) {
+
+                        routes[route.path] = route;
+
+                    }
 
                 }
 
@@ -150,8 +152,8 @@
 
             localStorage.setItem("routes", JSON.stringify(routes));
 
-            if (spa.viewCache && (spa.getParameterByName("_escaped_fragment_") === "")) {
-                spa.viewCache.parseViews(settings.viewSelector);
+            if (spa.viewEngine && (spa.getParameterByName("_escaped_fragment_") === "")) {
+                spa.viewEngine.parseViews(settings.viewSelector);
             }
 
         },
@@ -159,14 +161,18 @@
         createRoute: function (viewId, rawPath, view) {
 
             //need to check for duplicate path
-            return {
+            var route = {
                 viewId: viewId,
                 viewModule: (view.hasAttribute("spa-module") ? view.getAttribute("spa-viewId") :
                     viewId),
-                path: rawPath.split("\\:")[0],
-                params: rawPath.split("\\:").slice(1),
+                path: rawPath.split("/:")[0],
+                params: rawPath.split("/:").slice(1),
                 title: (view.hasAttribute("spa-title") ? view.getAttribute("spa-title") :
                     this.settings.defaultTitle),
+                viewType: (view.hasAttribute("spa-view-type") ? view.getAttribute("spa-view-type") :
+                    "view"),
+                layout: (view.hasAttribute("spa-layout") ? view.getAttribute("spa-layout") :
+                    undefined),
                 transition: (view.hasAttribute("spa-transition") ?
                     view.getAttribute("spa-transition") :
                     ""),
@@ -178,6 +184,12 @@
                 unload: (view.hasAttribute("spa-unload") ? view.getAttribute("spa-unload") : undefined),
                 afterunload: (view.hasAttribute("spa-afterunload") ? view.getAttribute("spa-afterunload") : undefined)
             };
+
+            if (route.viewType === "view") {
+
+                return route;
+
+            }
 
         },
 
@@ -207,7 +219,9 @@
                     if (route.path !== "" &&
                         path.search(search) === 0) {
 
+                        //use regular expression here to pull just the 1st instace
                         params = path.replace(route.path, "")
+                            //.split("\\")
                             .split("/")
                             .slice(1); //the first item will be empty
 
@@ -287,7 +301,7 @@
             'OAnimation': 'oAnimationEnd'
         },
 
-        // repurposed helper
+        // re-purposed helper
         cssPrefix: function (suffix) {
 
             if (!suffix) {
@@ -326,14 +340,21 @@
 
         removeExtraViews: function (currentView) {
 
-            var length = currentView.length;
+            if (currentView) {
 
-            while (length > 1) {
+                var length = currentView.length;
 
-                length--;
-                currentView[length]
-                    .parentNode.removeChild(currentView[length]);
+                while (length > 1) {
+
+                    length--;
+                    currentView[length]
+                        .parentNode.removeChild(currentView[length]);
+                }
+
             }
+
+            return currentView[0];
+
         },
 
         pushView: function (path) {
@@ -346,135 +367,221 @@
 
         },
 
+        getHashPath: function () {
+
+            var hashFragment = (window.location.hash !== "#") ? window.location.hash.replace("#!", "") : "";
+
+            hashFragment = hashFragment.split(":")[0];
+            hashFragment = hashFragment.replace(new RegExp("\\\\$"), "");
+
+            return hashFragment;
+
+        },
+
+        getClassSelector: function (className) {
+            return leadingDot + className;
+        },
+
+        getOldRoute: function (oldViewId) {
+
+            if (oldViewId) {
+                return this.matchRouteById(oldViewId);
+            }
+
+            return undefined;
+
+        },
+
+        getController: function (route) {
+
+            var spa = this,
+                controller = spa.$context[route.viewId];
+
+            if (controller && typeof controller === "function") {
+
+                return new controller(spa.$context);
+
+            } else if (controller && typeof controller === "object") {
+
+                return new controller;
+
+            } else {
+                return;
+            }
+
+
+        },
+
+        getExistingView: function (newLayout) {
+
+            var spa = this
+                view = document.querySelector("." + spa.settings.currentLayoutClass);
+
+            //transitionFullLayout
+
+
+            if (!view) {
+                view = document.querySelector("." + spa.settings.currentViewClass);
+            }
+
+            return view;
+
+        },
+
         swapView: function () {
 
             var spa = this,
                 settings = spa.settings,
-                route, oldRoute, anim,
-                hash = window.location.hash,
-                newView,
+                oldRoute, anim, childView,
+                oldViewId = undefined,
+                newView, newLayout, currentView, oldLayout, oldView,
                 hasEscapeFragment = spa.getParameterByName("_escaped_fragment_"),
-                hashFragment = (hash !== "#") ? hash.replace("#!", "") : "",
-                path = hashFragment.split(":")[0],
-                currentView = document.querySelectorAll("." + settings.currentClass);
+                path = spa.getHashPath(),
+                route = spa.matchRouteByPath(path);
+
+            if (!route || hasEscapeFragment !== "") {
+                window.location.hash = "#!" + settings.NotFoundRoute;
+                return;
+            }
+
+            //get current layout
+            oldLayout = document.querySelectorAll(leadingDot + settings.layoutClass);
+
+            //get current childview
+            oldView = document.querySelectorAll(leadingDot + settings.currentViewClass);
+
+            if (oldLayout && oldLayout.length > 0) {
+
+                oldLayout = spa.removeExtraViews(oldLayout);
+
+            }
+
+            if (oldView && oldView.length > 0) {
+
+                oldView = spa.removeExtraViews(oldView);
+                oldViewId = (oldView) ? oldView.id : undefined;
+
+            }
+
+            if (oldView.length === 0) {
+                oldView = undefined;
+            }
+
+            if (oldViewId === route.viewId) {
+                // the view is not changing so just get out
+                return;
+            }
+
+            oldRoute = spa.getOldRoute(oldViewId);
+
+            if (oldLayout) {
+
+                if (oldLayout.length !== undefined) {
+                    if (oldLayout.length === 0) {
+                        oldLayout = undefined;
+                    } else {
+                        oldLayout = oldLayout[0];
+                    }
+                }
+
+                if (oldLayout) {
+
+                    oldView = oldLayout;
+
+                }
+            }
+
+            //determine if transition replaces full layout or just child if layouts are the same
+            //if (oldViewId === route.layout) {
+
+
+            //}
+
 
             spa.$oldController = spa.$controller;
 
-            if (currentView.length && currentView.length > 1) {
-                //adding this because I found myself sometimes tapping items to launch a new view before the animation was complete.
-                spa.removeExtraViews(currentView);
+            spa.$controller = spa.getController(route);
+
+            if (!spa.$controller) {
+                return;
             }
 
-            //convert nodelist to a single node
-            currentView = currentView[0];
+            //analytics
+            spa.pushView(path);
 
-            if (currentView && currentView.id) {
-                oldRoute = spa.matchRouteById(currentView.id);
-            }
+            //append new view with any layout to the DOM, after the existing view + layout
+            oldView = spa.ensureViewAvailable(oldView, route);
 
-            route = spa.matchRouteByPath(path);
+            newView = document.getElementById(route.viewId);
 
-            if (route !== undefined) {
+            if (newView) {
 
-                if (spa.$context[route.viewId] &&
-                    typeof spa.$context[route.viewId] === "function") {
+                if (oldView) {
 
-                    spa.$controller = new spa.$context[route.viewId](spa.$context);
+                    spa.makeViewCallback(spa.$oldController, "beforeunload");
 
-                } else if (spa.$context[route.viewId] &&
-                    typeof spa.$context[route.viewId] === "object") {
+                    if (spa.hasAnimations()) {
 
-                    spa.$controller = new spa.$context[route.viewId];
+                        anim = spa.getAnimation(route);
+                        spa.animation = anim;
 
-                } else {
-                    return;
-                }
+                        if (anim) {
 
-                spa.pushView(path);
-
-                spa.ensureViewAvailable(currentView, route.viewId);
-
-                newView = document.getElementById(route.viewId);
-
-                if (newView) {
-
-                    if (currentView) {
-
-                        //spa.makeViewCallback(oldRoute, "beforeunload");
-
-                        spa.makeViewCallback1(spa.$oldController, "beforeunload");
-
-                        if (spa.hasAnimations()) {
-
-                            anim = spa.getAnimation(route);
-                            spa.animation = anim;
-
-                            if (anim) {
-
-                                currentView.addEventListener(
-                                    spa.transitionend[spa.cssPrefix("animation")], function (e) {
-                                        spa.endSwapAnimation.call(spa, oldRoute, route);
-                                        currentView = undefined;
-                                    });
-
-                                //modify once addClass supports array of classes
-                                $(currentView).addClass("animated out " + anim)
-                                    .removeClass("in");
-
-                                $(newView).addClass(settings.currentClass +
-                                    " animated " + anim + " in");
-
-                            } else {
-
-                                $(newView).addClass(settings.currentClass);
-                                spa.endSwapAnimation.call(spa, oldRoute, route);
-                            }
-
-                        }
-
-                    } else {
-
-                        if (settings.intoAnimation) {
-
-                            newView.addEventListener(
+                            oldView.addEventListener(
                                 spa.transitionend[spa.cssPrefix("animation")], function (e) {
-                                    spa.endSwapAnimation.call(spa, oldRoute, route);
+                                    spa.endSwapAnimation(oldRoute, route, oldView);
                                     currentView = undefined;
                                 });
 
-                            $(newView).addClass(settings.currentClass +
+                            //modify once addClass supports array of classes
+                            $(oldView).addClass("animated out " + anim)
+                                .removeClass("in");
+
+                            $(newView).addClass(settings.currentViewClass +
                                 " animated " + anim + " in");
 
                         } else {
 
-                            $(newView).addClass(settings.currentClass);
-                            spa.endSwapAnimation.call(spa, oldRoute, route);
+                            $(newView).addClass(settings.currentViewClass);
+                            spa.endSwapAnimation(oldRoute, route, oldView);
                         }
 
                     }
 
-                    spa.setDocumentTitle(route);
+                } else {
 
-                    if (route) {
+                    //this is probably the initial load
 
-                        //spa.makeViewCallback(route, "beforeonload");
-                        //spa.makeViewCallback(route, "onload");
-                        //spa.makeViewCallback(route, "afteronload");
+                    if (settings.intoAnimation) {
 
-                        spa.makeViewCallback1(spa.$controller, "beforeonload", route.paramValues);
-                        spa.makeViewCallback1(spa.$controller, "onload", route.paramValues);
-                        spa.makeViewCallback1(spa.$controller, "afteronload", route.paramValues);
+                        newView.addEventListener(
+                            spa.transitionend[spa.cssPrefix("animation")], function (e) {
+                                spa.endSwapAnimation.call(spa, oldRoute, route, currentView);
+                                currentView = undefined;
+                            });
+
+                        $(newView).addClass(settings.currentViewClass +
+                            " animated " + anim + " in");
+
+                    } else {
+
+                        $(newView).addClass(settings.currentViewClass);
+                        spa.endSwapAnimation.call(spa, oldRoute, route, currentView);
                     }
 
                 }
 
-            } else if (hasEscapeFragment === "") { //Goto 404 handler
+                spa.setDocumentTitle(route);
 
-                window.location.hash = "#!" + settings.NotFoundRoute;
+                if (route && spa.$controller) {
 
-            } else { //should only get here is this is an escapefragemented url for the spiders
-                newView = $(settings.viewSelector).addClass(settings.currentClass);
+                    spa.makeViewCallback(spa.$controller, "beforeonload", route.paramValues);
+                    spa.makeViewCallback(spa.$controller, "onload", route.paramValues);
+                    spa.makeViewCallback(spa.$controller, "afteronload", route.paramValues);
+                }
+
             }
+
 
         },
 
@@ -488,25 +595,25 @@
 
         },
 
-        endSwapAnimation: function (route, newRoute) {
+        endSwapAnimation: function (route, newRoute, currentView) {
             //currentView, newView, 
             var spa = this,
-                currentView = document.querySelector(".current.out"),
+//                currentView = document.querySelector(leadingDot + spa.settings.currentViewClass + ".out"),
                 newView = document.getElementById(newRoute.viewId),
                 parent,
                 anim = spa.animation;
 
             if (route) {
-                spa.makeViewCallback1(spa.$oldController, "unload");
-                spa.makeViewCallback1(spa.$oldController, "afterunload");
+                spa.makeViewCallback(spa.$oldController, "unload");
+                spa.makeViewCallback(spa.$oldController, "afterunload");
             }
 
-            if (newView.classList.contains("in")) {
+            if (newView && newView.classList.contains("in")) {
                 newView.classList.remove("in");
                 newView.classList.remove(anim);
             }
 
-            if (currentView && spa.viewCache && currentView.parentNode) {
+            if (currentView && spa.viewEngine && currentView.parentNode) {
 
                 parent = currentView.parentNode
                 parent.removeChild(currentView);
@@ -516,39 +623,85 @@
         },
 
         //make sure the view is actually available, this relies on backpack to supply the markup and inject it into the DOM
-        ensureViewAvailable: function (currentView, newViewId) {
-            //must have backpack or something similar spa implements its interface
+        ensureViewAvailable: function (currentView, route) {
 
             var spa = this,
                 view,
+                currentLayout,
                 newView, loc;
 
-            if (spa.viewCache) {
+            if (spa.viewEngine) {
 
-                view = spa.viewCache.getView(newViewId);
+                view = spa.viewEngine.getView(route);
 
                 if (view) {
+
                     newView = spa.createFragment(view);
+
                 } else {
+
+                    //make it call the server to recyle the load process because it looks like
+                    //the view cache has been compromised.
                     loc = window.location.href.split("#!");
                     window.location.replace(loc[0] + "?" +
                         spa.settings.forceReload + "=" + loc[1]);
+
                 }
 
+                //there is an existing view
                 if (currentView) {
-                    currentView.parentNode
-                        .insertBefore(newView, currentView);
+
+                    //if new view has a layout
+                    if (route.layout) {
+
+                        if (document.querySelector(spaLayout)) {
+
+                            //get current layout because that needs to be replaced
+                            currentLayout = document.querySelector(spaLayout);
+
+                            //if (!currentView) {
+                            //    currentView = document.querySelector(".spa-current-view");
+                            //}
+
+                            if (currentLayout) {
+                                currentLayout.parentNode.insertBefore(newView, currentLayout);
+                            }
+
+                        } else {
+
+                            currentView.parentNode.insertBefore(newView, currentView);
+
+                        }
+
+                    } else {
+
+                        currentLayout = document.querySelector(spaLayout);
+
+                        if (currentLayout) {
+
+                            currentView = currentLayout;
+
+                        }
+
+                        currentView.parentNode.insertBefore(newView, currentView);
+
+                    }
+
                 } else {
-                    document.querySelector(spa.settings.mainWrappperSelector)
-                        .appendChild(newView);
+                    //no existing view, this is startup, so add the view to the main target.
+                    document.querySelector(spa.settings.mainWrappperSelector).appendChild(newView);
+
                 }
 
             }
+
             //else assume the view is already in the markup
+
+            return currentView;
 
         },
 
-        makeViewCallback1: function (controller, action, params) {
+        makeViewCallback: function (controller, action, params) {
 
             if (controller && controller[action]) {
                 controller[action].call(controller, params || {});
@@ -556,44 +709,6 @@
 
         },
 
-        makeViewCallback: function (route, action) {
-
-            var spa = this,
-                $context = spa.$context,
-                settings = spa.settings,
-                a, cbPaths, callback;
-
-            if (action && !route[action]) {
-
-                if ($context) {
-
-                    if ($context[route.viewModule] && $context[route.viewModule][action]) {
-                        $context[route.viewModule][action].call($context, route.paramValues || {});
-                    }
-
-                }
-
-                return;
-            }
-
-            cbPaths = route[action].split(".");
-
-            callback = window[cbPaths[0]];
-
-            for (a = 1; a < cbPaths.length; a++) {
-
-                if (a === 1) {
-                    spa = callback;
-                }
-
-                callback = callback[cbPaths[a]];
-            }
-
-            if (callback) {
-                callback.call(spa, route.paramValues || {});
-            }
-
-        },
 
         setDocumentTitle: function (route) {
 
@@ -660,16 +775,16 @@
 
         /*
         storeAsyncContent: function (content) {
-
-            this.viewCache.updateViewsFromFragment(this.settings.viewSelector, content);
+    
+            this.viewEngine.updateViewsFromFragment(this.settings.viewSelector, content);
         },
-
+    
         loadAsyncContent: function (url, callback) {
-
+    
             callback = callback || this.storeAsyncContent;
-
+    
             var oReq = new XMLHttpRequest();
-
+    
             oReq.onload = callback;
             oReq.open("get", url, true);
             oReq.send();
@@ -686,7 +801,10 @@
         settings: {
             routes: [],
             viewSelector: "[type='text/x-Rivets-template']",
-            currentClass: "current",
+            currentViewClass: "spa-current-view",
+            currentLayoutClass: "spa-current-layout",
+            layoutClass: "spa-layout",
+            viewClass: "spa-view",
             mainWrappperSelector: "main",
             NotFoundView: "nofoundView",
             NotFoundRoute: "404",
@@ -696,6 +814,7 @@
             autoSetTitle: true,
             parseDOM: true,
             initView: true,
+            transitionFullLayout: true,
             intoAnimation: true,
             viewTransition: "slide",
             asyncUrl: undefined
