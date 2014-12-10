@@ -4,22 +4,24 @@
 
     "use strict";
 
-    var View = Class.extend({
+    var testApp = Class.extend({
 
         init: function () {
 
         },
 
-        version: "0.5.0",
+        version: "0.2.0",
+
+        services: {},
 
         parseServices: function (services) {
 
             for (var service in services) {
 
                 if (typeof services[service] === "function") {
-                    this[service] = new services[service]();
+                    this.services[service] = new services[service]();
                 } else {
-                    this[service] = services[service];
+                    this.services[service] = services[service];
                 }
 
             }
@@ -31,6 +33,6 @@
 
     });
 
-    return (window.View = View);
+    return (window.testApp = testApp);
 
 })();

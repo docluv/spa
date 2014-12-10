@@ -6,6 +6,8 @@
 
     var Controller = Class.extend({
 
+
+        //TODO: Change this to accept a services object and the view engine
         init: function(rootScope) {
 
             if (!rootScope) {
@@ -35,16 +37,18 @@
 
         },
 
-        version: "0.5.0",
+        version: "0.5.0"
 
-        noResults: "<div class='no-results'>Sorry There are No Results Available</div>",
+        //,
 
-        mainTitle: document.querySelector(".view-title"),
+//        noResults: "<div class='no-results'>Sorry There are No Results Available</div>",
 
-        setMainTitle: function(title) {
+        //mainTitle: document.querySelector(".view-title"),
 
-            this.mainTitle.textContent = document.title = title.toLowerCase();
-        }
+        //setMainTitle: function(title) {
+
+        //    this.mainTitle.textContent = document.title = title.toLowerCase();
+        //}
 
     });
 

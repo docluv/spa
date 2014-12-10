@@ -399,11 +399,15 @@
 
             if (controller && typeof controller === "function") {
 
-                return new controller(spa.$context);
+                return new controller(spa.$context, route);
 
             } else if (controller && typeof controller === "object") {
 
-                return new controller;
+                controller = new controller;
+
+                controller.response = route;
+
+                return controller;
 
             } else {
                 return;
@@ -415,7 +419,7 @@
         getExistingView: function (newLayout) {
 
             var spa = this
-                view = document.querySelector("." + spa.settings.currentLayoutClass);
+            view = document.querySelector("." + spa.settings.currentLayoutClass);
 
             //transitionFullLayout
 
@@ -575,9 +579,9 @@
 
                 if (route && spa.$controller) {
 
-                    spa.makeViewCallback(spa.$controller, "beforeonload", route.paramValues);
-                    spa.makeViewCallback(spa.$controller, "onload", route.paramValues);
-                    spa.makeViewCallback(spa.$controller, "afteronload", route.paramValues);
+                    spa.makeViewCallback(spa.$controller, "beforeonload", route);
+                    spa.makeViewCallback(spa.$controller, "onload", route);
+                    spa.makeViewCallback(spa.$controller, "afteronload", route);
                 }
 
             }
