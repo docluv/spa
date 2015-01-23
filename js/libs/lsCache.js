@@ -39,8 +39,7 @@ sessionStorage. It can be used by other services to provide a common caching lay
         constructor: l2Storeagecache,
 
         init: function () {
-
-
+            
             return this;
         },
 
@@ -75,6 +74,17 @@ sessionStorage. It can be used by other services to provide a common caching lay
 
             }
 
+        },
+
+        setObject: function (key, value, ttl) {
+
+            if (typeof value !== "string") {
+                value = JSON.stringify(value);
+            }
+
+            this.setItem(key,
+                value,
+                ttl);
         },
 
         getItem: function (key) {

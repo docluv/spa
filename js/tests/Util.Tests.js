@@ -151,7 +151,7 @@ arrayDoesContain = function(actual, value, message) {
       return this;
   };
 
-   $.fn.assertIsHidden = function (message){
+  $.fn.assertIsHidden = function (message){
       QUnit.push(this.is(":hidden"), this.is(":hidden") ? "hidden" : "visible", "hidden", message);
       return this;
    };

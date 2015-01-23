@@ -7,24 +7,35 @@
 
     "use strict";
 
-    var RivetsViewEngine = function (settings) {
+    var RivetsViewEngine = function (cache) {
 
-        var rivetsViewEngine = new RivetsViewEngine.fn.init();
+        if (!cache) {
 
+            throw new Error("Must include a cache provider for the view engine");
+        }
 
-        return rivetsViewEngine;
+        return new RivetsViewEngine.fn.init(cache);
+
     };
 
     RivetsViewEngine.fn = RivetsViewEngine.prototype = {
 
         constructor: RivetsViewEngine,
 
-        init: function () {
+        init: function (cache) {
+
+            if (typeof cache === "function") {
+                cache = new cache();
+            }
+
+            this.cache = cache;
 
             return this;
         },
 
         version: "0.0.1",
+
+        cache: undefined,
 
         eventPrefix: "spa-",
         templateService: undefined,
@@ -38,7 +49,7 @@
 
             var rivetsViewEngine = this,
                 i, temp, viewMarkup,
-                views = JSON.parse(localStorage.getItem(rivetsViewEngine.appPrefix + "views")),
+                views = rivetsViewEngine.cache.getObject(rivetsViewEngine.appPrefix + "views"),
                 t = document.querySelectorAll(rivetsViewEngine.templateType);
 
             views = views || {};
@@ -153,11 +164,10 @@
 
         setViews: function (views) {
 
-            var rivetsViewEngine = this,
-                view;
+            var view;
 
             for (view in views) {
-                rivetsViewEngine.setView(view, views[view]);
+                this.setView(view, views[view]);
             }
 
         },
@@ -187,9 +197,9 @@
 
         saveViews: function () {
 
-            var rivetsViewEngine = this;
+            var rve = this;
 
-            localStorage.setItem(rivetsViewEngine.appPrefix + "views", JSON.stringify(rivetsViewEngine.views));
+            rve.cache.setObject(rve.appPrefix + "views", rve.views);
 
         },
 
@@ -197,7 +207,6 @@
 
             delete this.views[key];
             this.saveViews();
-
 
         },
 

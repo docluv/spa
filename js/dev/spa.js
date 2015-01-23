@@ -804,6 +804,7 @@
 
         settings: {
             routes: [],
+            middleware: {},
             viewSelector: "[type='text/x-Rivets-template']",
             currentViewClass: "spa-current-view",
             currentLayoutClass: "spa-current-layout",
